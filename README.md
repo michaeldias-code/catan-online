@@ -9,9 +9,10 @@ O projeto está em fase ativa de desenvolvimento, com as mecânicas básicas de 
 Este projeto é e será **gratuito para sempre**. Acreditamos na colaboração e no compartilhamento de conhecimento. O código está sob a licença **GNU GPL v3**, o que garante que ele permaneça livre para todos.
 
 ## 🛠️ Tecnologias
-- **Frontend**: Next.js, React, Tailwind CSS
+- **Frontend**: Next.js 15, React, Tailwind CSS
+- **Backend**: Supabase (Realtime, Database, JSONB)
 - **Ícones**: Lucide React
-- **Backend (Futuro)**: Supabase (Realtime & Database)
+- **Áudio**: HTML5 Audio API (Mixkit SFX)
 
 ## 📄 Licença
 Distribuído sob a licença GNU GPL v3. Veja `LICENSE` para mais informações.
