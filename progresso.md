@@ -1,0 +1,61 @@
+# Progresso do Projeto Catan
+
+Status atual das funcionalidades do jogo e roteiro para versão multiplayer online.
+
+## ✅ Funcionalidades Implementadas (Feito)
+
+- [x] **Tabuleiro Hexagonal**: Geração dinâmica de 19 hexágonos com recursos e números.
+- [x] **Sistema de Recursos**: Definição de Madeira, Tijolo, Ovelha, Trigo e Minério com cores e ícones específicos.
+- [x] **Gráfico de Conexões**: Construção automática de vértices e arestas com detecção de proximidade para fusão de pontos.
+- [x] **Posicionamento de Aldeias (Settlements)**: Lógica de construção respeitando a regra de distância (mínimo 2 arestas de distância).
+- [x] **Posicionamento de Estradas (Roads)**:
+    - [x] Lógica de conectividade a partir de construções existentes.
+    - [x] **Destaque Visual**: Bolinhas amarelas indicando onde é permitido construir.
+    - [x] **Trava de Construção**: Impedimento de cliques em locais não permitidos, sincronizado com o visual das bolinhas amarelas.
+    - [x] **Seleção Inteligente**: Melhoria na detecção de cliques para priorizar seleção de vilas ou construção de estradas conforme o contexto.
+- [x] **Upgrade para Cidades (Cities)**: Substituição de aldeias por cidades com custo de 2 Trigo e 3 Minérios.
+- [x] **Sistema de Economia e Recursos**:
+    - [x] **Distribuição por Dados**: Ganho automático de recursos ao tirar o número correspondente no dado.
+    - [x] **Produção Dupla**: Cidades produzem 2 recursos em vez de 1.
+    - [x] **Gestão de Inventário**: Controle em tempo real das cartas de recursos de cada jogador.
+    - [x] **Custos de Construção**: Validação e dedução automática de recursos ao construir (Estrada, Vila, Cidade).
+- [x] **Sistema de Pontuação**:
+    - [x] Contagem automática de Pontos de Vitória (1 por Vila, 2 por Cidade).
+    - [x] Detecção de vencedor ao atingir 10 pontos.
+- [x] **Sistema de Turnos Completo**:
+    - [x] **Fase de Setup**: Ordem de posicionamento inicial (1-2-3-4-4-3-2-1) com ganho de recursos no segundo round.
+    - [x] **Fase de Jogo**: Alternância de turnos, lançamento de dados e controle de ações.
+- [x] **Interface de Usuário (UI) Avançada**:
+    - [x] Canvas interativo com suporte a hover, clique e efeitos sonoros.
+    - [x] Painel lateral moderno com inventário e status dos jogadores.
+    - [x] Modal de Regras e Custos de construção.
+    - [x] Modal de Vitória com anúncio do vencedor.
+- [x] **Sons e Feedback**:
+    - [x] Efeitos sonoros para construção, dados, virada de turno e vitória.
+    - [x] Opção para ativar/desativar áudio.
+- [x] **Ferramentas de Desenvolvimento**:
+    - [x] Modo Debug para visualizar IDs de vértices e arestas.
+    - [x] Ajuste fino de posição dos hexágonos via interface.
+    - [x] Exportação/Importação do estado do tabuleiro via JSON.
+
+## 🚀 Requisitos para Multiplayer Online (Pendente)
+
+### 1. Infraestrutura e Backend
+- [ ] **Servidor Real-time**: Implementação de WebSocket (Socket.io ou Supabase Realtime) para sincronização de ações.
+- [ ] **Gerenciamento de Salas**: Criação e entrada em lobbies com códigos de acesso.
+- [ ] **Autenticação**: Cadastro e login de jogadores para salvar progresso/estatísticas.
+
+### 2. Sincronização do Estado do Jogo
+- [ ] **Single Source of Truth**: Mover o estado do jogo para o servidor para evitar trapaças e dessincronização.
+- [ ] **Validação de Jogadas**: O servidor deve validar se uma construção é permitida antes de replicar para os outros.
+
+### 3. Mecânicas de Jogo Avançadas
+- [ ] **Sistema de Trocas**: Interface para troca de recursos entre jogadores e com o porto/banco.
+- [ ] **Cartas de Desenvolvimento**: Compra e uso de cartas (Cavaleiro, Progresso, Pontos de Vitória).
+- [ ] **O Ladrão (Robber)**: Mecânica de bloqueio de hexágono e roubo de cartas.
+- [ ] **Bônus Especiais**: Maior Estrada e Maior Exército.
+
+### 4. Melhorias de UX Online
+- [ ] **Chat**: Sistema de mensagens entre os jogadores na sala.
+- [ ] **Indicador de Turno**: Notificações e timers para o jogador da vez.
+- [ ] **Reconexão**: Capacidade de voltar ao jogo em caso de queda de internet.
