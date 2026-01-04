@@ -341,13 +341,16 @@ export default function CatanGame() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
 
+  // Efeito para simular o carregamento inicial do tabuleiro após entrar na sala
   useEffect(() => {
-    // Pequeno delay para garantir que o canvas e o tabuleiro foram processados
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (isJoined) {
+      setIsInitialLoading(true);
+      const timer = setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 1500); // 1.5 segundos de delay para charme e garantir renderização
+      return () => clearTimeout(timer);
+    }
+  }, [isJoined]);
 
   // Removido useEffect redundante que causava loop infinito na sincronização
 
@@ -760,6 +763,7 @@ useEffect(() => {
     gameState.currentTurn,
   mode,
   initialized,
+  isInitialLoading,
   debugMode,
   showVertexNumbers,
   selectedSettlement,
@@ -1182,24 +1186,24 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
   if (!isJoined) {
     return (
       <div className="min-h-screen bg-[#1a4a6e] flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-[#2a2a2a] p-8 rounded-3xl shadow-2xl border border-white/10 text-center">
-          <h1 className="text-5xl font-black text-white mb-2 tracking-tighter">CATAN</h1>
-          <p className="text-gray-400 mb-8 font-medium">Insira o código da sala para começar</p>
+        <div className="max-w-md w-full bg-[#2a2a2a] p-6 sm:p-8 rounded-3xl shadow-2xl border border-white/10 text-center">
+          <h1 className="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tighter">CATAN</h1>
+          <p className="text-gray-400 mb-6 sm:mb-8 font-medium text-sm sm:text-base">Insira o código da sala para começar</p>
           
           <div className="space-y-4">
             <input
               type="text"
-              placeholder="CÓDIGO DA SALA (EX: SALA1)"
+              placeholder="CÓDIGO DA SALA"
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-              className="w-full bg-black/30 border-2 border-white/10 rounded-2xl px-6 py-4 text-white text-xl font-bold focus:border-amber-500 outline-none transition-all text-center uppercase tracking-widest"
+              className="w-full bg-black/30 border-2 border-white/10 rounded-2xl px-4 py-3 sm:px-6 sm:py-4 text-white text-lg sm:text-xl font-bold focus:border-amber-500 outline-none transition-all text-center uppercase tracking-widest"
               onKeyDown={(e) => e.key === 'Enter' && joinRoom()}
             />
             
             <button
               onClick={joinRoom}
               disabled={isLoading || !roomCode.trim()}
-              className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-xl transition-all ${
+              className={`w-full py-3 sm:py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-lg sm:text-xl transition-all ${
                 isLoading || !roomCode.trim()
                 ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                 : 'bg-amber-500 hover:bg-amber-600 text-black transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(245,158,11,0.3)]'
@@ -1216,7 +1220,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
             </button>
           </div>
           
-          <p className="mt-8 text-white/20 text-xs font-bold uppercase tracking-widest">
+          <p className="mt-6 sm:mt-8 text-white/20 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
             Multiplayer Realtime • Supabase Connected
           </p>
         </div>
@@ -1250,46 +1254,46 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               </button>
             </div>
             
-            <div className="p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
+            <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 overflow-y-auto flex-1 custom-scrollbar">
               {/* Custos de Construção */}
               <div className="space-y-4">
-                <h3 className="text-indigo-900 font-black text-lg uppercase tracking-widest border-b-2 border-indigo-100 pb-2">
+                <h3 className="text-indigo-900 font-black text-sm sm:text-lg uppercase tracking-widest border-b-2 border-indigo-100 pb-2">
                   Custos de Construção
                 </h3>
                 
-                <div className="grid gap-4">
-                  <div className="bg-gray-50 p-4 rounded-2xl flex items-center justify-between border border-gray-100">
+                <div className="grid gap-3 sm:gap-4">
+                  <div className="bg-gray-50 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between border border-gray-100 gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="bg-amber-500 p-2 rounded-lg text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M6 12h12M12 6v12"/></svg></div>
-                      <span className="font-bold text-gray-800">Estrada</span>
+                      <div className="bg-amber-500 p-2 rounded-lg text-white flex-shrink-0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M6 12h12M12 6v12"/></svg></div>
+                      <span className="font-bold text-gray-800 text-sm sm:text-base">Estrada</span>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="bg-[#2D5A27]/10 text-[#2D5A27] px-3 py-1 rounded-full text-xs font-black border border-[#2D5A27]/20">1 🌲 Madeira</span>
-                      <span className="bg-[#A52A2A]/10 text-[#A52A2A] px-3 py-1 rounded-full text-xs font-black border border-[#A52A2A]/20">1 🧱 Tijolo</span>
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#2D5A27]/20">1 🌲 Madeira</span>
+                      <span className="bg-[#A52A2A]/10 text-[#A52A2A] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#A52A2A]/20">1 🧱 Tijolo</span>
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-2xl flex items-center justify-between border border-gray-100">
+                  <div className="bg-gray-50 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between border border-gray-100 gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="bg-amber-500 p-2 rounded-lg text-white"><Home size={20} /></div>
-                      <span className="font-bold text-gray-800">Vila</span>
+                      <div className="bg-amber-500 p-2 rounded-lg text-white flex-shrink-0"><Home size={18} /></div>
+                      <span className="font-bold text-gray-800 text-sm sm:text-base">Vila</span>
                     </div>
-                    <div className="flex gap-1 flex-wrap justify-end max-w-[200px]">
-                      <span className="bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-1 rounded-full text-[10px] font-black border border-[#2D5A27]/20">1 🌲 Mad.</span>
-                      <span className="bg-[#A52A2A]/10 text-[#A52A2A] px-2 py-1 rounded-full text-[10px] font-black border border-[#A52A2A]/20">1 🧱 Tij.</span>
-                      <span className="bg-[#F2C94C]/10 text-[#B8860B] px-2 py-1 rounded-full text-[10px] font-black border border-[#F2C94C]/20">1 🌾 Trigo</span>
-                      <span className="bg-[#88B04B]/10 text-[#556B2F] px-2 py-1 rounded-full text-[10px] font-black border border-[#88B04B]/20">1 🐑 Ovel.</span>
+                    <div className="flex gap-1 flex-wrap justify-start sm:justify-end max-w-full sm:max-w-[200px]">
+                      <span className="bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#2D5A27]/20">1 🌲 Mad.</span>
+                      <span className="bg-[#A52A2A]/10 text-[#A52A2A] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#A52A2A]/20">1 🧱 Tij.</span>
+                      <span className="bg-[#F2C94C]/10 text-[#B8860B] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#F2C94C]/20">1 🌾 Trigo</span>
+                      <span className="bg-[#88B04B]/10 text-[#556B2F] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#88B04B]/20">1 🐑 Ovel.</span>
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-2xl flex items-center justify-between border border-gray-100">
+                  <div className="bg-gray-50 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between border border-gray-100 gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="bg-amber-500 p-2 rounded-lg text-white"><Building size={20} /></div>
-                      <span className="font-bold text-gray-800">Cidade</span>
+                      <div className="bg-amber-500 p-2 rounded-lg text-white flex-shrink-0"><Building size={18} /></div>
+                      <span className="font-bold text-gray-800 text-sm sm:text-base">Cidade</span>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="bg-[#F2C94C]/10 text-[#B8860B] px-3 py-1 rounded-full text-xs font-black border border-[#F2C94C]/20">2 🌾 Trigo</span>
-                      <span className="bg-[#7B8D8E]/10 text-[#4A5D5E] px-3 py-1 rounded-full text-xs font-black border border-[#7B8D8E]/20">3 ⛰️ Minér.</span>
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="bg-[#F2C94C]/10 text-[#B8860B] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#F2C94C]/20">2 🌾 Trigo</span>
+                      <span className="bg-[#7B8D8E]/10 text-[#4A5D5E] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#7B8D8E]/20">3 ⛰️ Minér.</span>
                     </div>
                   </div>
                 </div>
@@ -1297,19 +1301,19 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
 
               {/* Regras Básicas */}
               <div className="space-y-4">
-                <h3 className="text-indigo-900 font-black text-lg uppercase tracking-widest border-b-2 border-indigo-100 pb-2">
+                <h3 className="text-indigo-900 font-black text-sm sm:text-lg uppercase tracking-widest border-b-2 border-indigo-100 pb-2">
                   Regras Rápidas
                 </h3>
                 <ul className="space-y-3">
-                  <li className="flex gap-3 text-sm text-gray-600 font-medium">
+                  <li className="flex gap-3 text-xs sm:text-sm text-gray-600 font-medium">
                     <span className="text-indigo-600 font-black">1.</span>
                     Cada <span className="text-gray-900 font-bold">Vila</span> vale 1 ponto. <span className="text-gray-900 font-bold">Cidades</span> valem 2 pontos.
                   </li>
-                  <li className="flex gap-3 text-sm text-gray-600 font-medium">
+                  <li className="flex gap-3 text-xs sm:text-sm text-gray-600 font-medium">
                     <span className="text-indigo-600 font-black">2.</span>
                     Cidades produzem o <span className="text-indigo-600 font-bold">DOBRO</span> de recursos.
                   </li>
-                  <li className="flex gap-3 text-sm text-gray-600 font-medium">
+                  <li className="flex gap-3 text-xs sm:text-sm text-gray-600 font-medium">
                     <span className="text-indigo-600 font-black">3.</span>
                     Vença ao atingir <span className="text-indigo-600 font-bold">10 pontos</span>.
                   </li>
@@ -1461,50 +1465,50 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
         </div>
       )}
 
-      <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl mb-6 w-full max-w-6xl border border-white/20 shadow-2xl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-4xl font-black text-white tracking-tighter italic">CATAN</h1>
-          <div className="flex gap-4 items-center flex-wrap">
-            <div className="bg-black/30 px-4 py-2 rounded-full border border-white/10">
-              <span className="text-gray-300 text-xs uppercase font-bold mr-2">Fase:</span>
-              <span className="text-white font-bold">{gameState.gamePhase === 'setup' ? 'Configuração Inicial' : 'Em Jogo'}</span>
+      <div className="bg-white/10 backdrop-blur-md p-4 sm:p-6 rounded-2xl mb-6 w-full max-w-6xl border border-white/20 shadow-2xl">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tighter italic">CATAN</h1>
+          <div className="flex gap-2 sm:gap-4 items-center flex-wrap justify-center">
+            <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
+              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">Fase:</span>
+              <span className="text-white text-xs sm:text-base font-bold">{gameState.gamePhase === 'setup' ? 'Configuração' : 'Em Jogo'}</span>
             </div>
             
-            <div className="bg-black/30 px-4 py-2 rounded-full border border-white/10">
-              <span className="text-gray-300 text-xs uppercase font-bold mr-2">Turno:</span>
-              <span className="font-black" style={{ color: PLAYERS[gameState.currentTurn].color }}>
+            <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
+              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">Turno:</span>
+              <span className="font-black text-xs sm:text-base" style={{ color: PLAYERS[gameState.currentTurn].color }}>
                 {PLAYERS[gameState.currentTurn].name}
               </span>
             </div>
 
-            <div className="bg-black/30 px-4 py-2 rounded-full border border-white/10 flex items-center gap-2">
-              <span className="text-gray-300 text-xs uppercase font-bold">Pontos:</span>
-              <div className="flex gap-2">
+            <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10 flex items-center gap-2">
+              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold">Pontos:</span>
+              <div className="flex gap-1.5">
                 {[1, 2, 3, 4].map(p => (
                   <div key={p} className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PLAYERS[p].color }} />
-                    <span className="text-white font-black text-sm">{playerVPs[p]}</span>
+                    <span className="text-white font-black text-xs sm:text-sm">{playerVPs[p]}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {gameState.gamePhase === 'playing' && (
-              <div className="flex gap-2">
-            <button
+              <div className="flex gap-2 mt-2 md:mt-0">
+                <button
                   onClick={rollDice}
                   disabled={gameState.dice[0] > 0}
-                  className={`px-6 py-2 rounded-full flex items-center gap-2 transition-all shadow-lg font-bold ${
+                  className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full flex items-center gap-2 transition-all shadow-lg font-bold text-sm sm:text-base ${
                     gameState.dice[0] === 0 
                     ? 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:scale-105' 
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  <Dices size={20} />
-                  {gameState.dice[0] === 0 ? 'Lançar Dados' : 'Dados Lançados'}
-            </button>
+                  <Dices size={18} />
+                  {gameState.dice[0] === 0 ? 'Dados' : 'Lançados'}
+                </button>
                 
-            <button
+                <button
                   onClick={() => {
                     playSound('nextTurn');
                     setGameState(prev => ({
@@ -1515,76 +1519,79 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                     setSelectedSettlement(null);
                   }}
                   disabled={gameState.dice[0] === 0}
-                  className={`px-6 py-2 rounded-full flex items-center gap-2 transition-all shadow-lg font-bold ${
+                  className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full flex items-center gap-2 transition-all shadow-lg font-bold text-sm sm:text-base ${
                     gameState.dice[0] > 0 
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white transform hover:scale-105' 
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  Finalizar Turno
-            </button>
-            </div>
+                  Passar Turno
+                </button>
+              </div>
             )}
 
             {gameState.dice[0] > 0 && (
-              <div className="bg-white text-indigo-900 px-4 py-2 rounded-full font-black text-xl shadow-inner flex items-center gap-2">
+              <div className="bg-white text-indigo-900 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-black text-base sm:text-xl shadow-inner flex items-center gap-2 mt-2 md:mt-0">
                 <span>🎲</span>
-                <span>{gameState.dice[0]} + {gameState.dice[1]} = {gameState.dice[0] + gameState.dice[1]}</span>
+                <span>{gameState.dice[0] + gameState.dice[1]}</span>
               </div>
             )}
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-end">
-          <div className="flex gap-3">
-          <button
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-center lg:items-end justify-between">
+          <div className="flex gap-2 sm:gap-3 justify-center w-full lg:w-auto">
+            <button
               onClick={() => gameState.gamePhase === 'playing' && setMode('settlement')}
               disabled={gameState.gamePhase === 'setup'}
-              className={`px-6 py-3 rounded-xl flex items-center gap-2 font-bold transition-all ${
+              className={`flex-1 sm:flex-none px-4 py-3 sm:px-6 sm:py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all text-sm sm:text-base ${
                 mode === 'settlement' ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 grayscale'
               } ${gameState.gamePhase === 'setup' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
             >
-              <Home size={22} />
-            Vila
-          </button>
-          <button
+              <Home size={20} />
+              <span className="hidden sm:inline">Vila</span>
+              <span className="sm:hidden">Vila</span>
+            </button>
+            <button
               onClick={() => gameState.gamePhase === 'playing' && setMode('road')}
               disabled={gameState.gamePhase === 'setup'}
-              className={`px-6 py-3 rounded-xl flex items-center gap-2 font-bold transition-all ${
+              className={`flex-1 sm:flex-none px-4 py-3 sm:px-6 sm:py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all text-sm sm:text-base ${
                 mode === 'road' ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 grayscale'
               } ${gameState.gamePhase === 'setup' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-              <path d="M6 12h12M12 6v12"/>
-            </svg>
-            Estrada
-          </button>
-          <button
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <path d="M6 12h12M12 6v12"/>
+              </svg>
+              <span className="hidden sm:inline">Estrada</span>
+              <span className="sm:hidden">Estr.</span>
+            </button>
+            <button
               onClick={() => gameState.gamePhase === 'playing' && setMode('city')}
               disabled={gameState.gamePhase === 'setup'}
-              className={`px-6 py-3 rounded-xl flex items-center gap-2 font-bold transition-all ${
+              className={`flex-1 sm:flex-none px-4 py-3 sm:px-6 sm:py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all text-sm sm:text-base ${
                 mode === 'city' ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 grayscale'
               } ${gameState.gamePhase === 'setup' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
             >
-              <Building size={22} />
-            Cidade
-          </button>
-        </div>
+              <Building size={20} />
+              <span className="hidden sm:inline">Cidade</span>
+              <span className="sm:hidden">Cid.</span>
+            </button>
+          </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-center">
-              <span className="text-white/50 text-xs font-bold uppercase tracking-wider">Recursos de {PLAYERS[gameState.currentTurn].name}</span>
-              <span className="bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest border border-amber-500/30">
-                {playerVPs[gameState.currentTurn]} Pontos de Vitória
+          <div className="flex flex-col gap-2 w-full lg:w-auto">
+            <div className="flex justify-between items-center px-1">
+              <span className="text-white/50 text-[10px] font-bold uppercase tracking-wider">Recursos</span>
+              <span className="bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border border-amber-500/30">
+                {playerVPs[gameState.currentTurn]} VP
               </span>
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap justify-start lg:justify-end no-scrollbar">
               {Object.entries(gameState.players[gameState.currentTurn].resources).map(([res, count]) => (
-                <div key={res} className="bg-black/40 px-3 py-2 rounded-xl border border-white/10 flex items-center gap-3 shadow-lg hover:bg-black/60 transition-colors">
-                  <div className="text-xl">{RESOURCES[res]?.icon}</div>
+                <div key={res} className="flex-shrink-0 bg-black/40 px-3 py-2 rounded-xl border border-white/10 flex items-center gap-2 shadow-lg hover:bg-black/60 transition-colors">
+                  <div className="text-lg">{RESOURCES[res]?.icon}</div>
                   <div className="flex flex-col">
-                    <span className="text-white font-black text-lg leading-none">{count}</span>
-                    <span className="text-white/40 text-[9px] uppercase font-bold tracking-tighter">{RESOURCES[res]?.name}</span>
+                    <span className="text-white font-black text-base leading-none">{count}</span>
+                    <span className="text-white/40 text-[8px] uppercase font-bold tracking-tighter">{RESOURCES[res]?.name.substring(0, 3)}</span>
                   </div>
                 </div>
               ))}
@@ -1593,71 +1600,74 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
         </div>
       </div>
 
-      <div className="relative group">
-      <canvas
-        ref={canvasRef}
-        width={1000}
-        height={700}
-        onClick={handleCanvasClick}
-        onMouseMove={handleCanvasMove}
-        onMouseLeave={() => setHoveredPosition(null)}
-          className={`bg-[#2c7bb6] rounded-2xl cursor-pointer shadow-[0_0_50px_rgba(0,0,0,0.3)] border-8 border-[#1a4a6e] transition-opacity duration-500 opacity-100`}
-        />
-        
-        {isInitialLoading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1a4a6e]/80 rounded-2xl z-20 backdrop-blur-sm">
-            <div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-white font-black text-xl animate-pulse uppercase tracking-widest">Carregando Tabuleiro...</p>
-            <p className="text-white/60 text-sm mt-2 font-bold uppercase tracking-tighter">Prepare sua estratégia!</p>
-          </div>
-        )}
+      <div className="relative group w-full flex justify-center">
+        <div className="w-full overflow-x-auto overflow-y-hidden py-4 -mx-4 px-4 sm:mx-0 sm:px-0 custom-scrollbar flex justify-start md:justify-center">
+          <div className="relative flex-shrink-0">
+            <canvas
+              ref={canvasRef}
+              width={1000}
+              height={700}
+              onClick={handleCanvasClick}
+              onMouseMove={handleCanvasMove}
+              onMouseLeave={() => setHoveredPosition(null)}
+              className={`bg-[#2c7bb6] rounded-2xl cursor-pointer shadow-[0_0_50px_rgba(0,0,0,0.3)] border-4 sm:border-8 border-[#1a4a6e] transition-opacity duration-500 opacity-100 max-w-none`}
+            />
+            
+            {isInitialLoading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1a4a6e]/80 rounded-2xl z-20 backdrop-blur-sm">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-white font-black text-lg sm:text-xl animate-pulse uppercase tracking-widest text-center px-4">Carregando Tabuleiro...</p>
+                <p className="text-white/60 text-[10px] sm:text-sm mt-2 font-bold uppercase tracking-tighter">Prepare sua estratégia!</p>
+              </div>
+            )}
 
-        {!isInitialLoading && gameState.gamePhase === 'setup' && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-950 px-8 py-3 rounded-full font-black shadow-2xl animate-bounce pointer-events-none whitespace-nowrap z-10">
-            {gameState.setupSubPhase === 'settlement' ? 'Escolha sua VILA inicial' : 'Agora construa a ESTRADA adjacente'}
+            {!isInitialLoading && gameState.gamePhase === 'setup' && (
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-950 px-4 py-2 sm:px-8 sm:py-3 rounded-full font-black shadow-2xl animate-bounce pointer-events-none whitespace-nowrap z-10 text-xs sm:text-base">
+                {gameState.setupSubPhase === 'settlement' ? 'Escolha sua VILA inicial' : 'Agora construa a ESTRADA adjacente'}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="mt-6 flex gap-4 flex-wrap justify-center">
+      <div className="mt-6 flex gap-2 sm:gap-4 flex-wrap justify-center">
         <button
           onClick={() => {
             const next = !audioEnabled;
             setAudioEnabled(next);
             if (next) {
-              // Feedback sonoro imediato ao reativar
               playSound('nextTurn');
             }
           }}
-          className={`px-6 py-2 rounded-full text-sm transition-all flex items-center gap-2 border ${audioEnabled ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}
+          className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full text-[10px] sm:text-sm transition-all flex items-center gap-2 border ${audioEnabled ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50'}`}
           title={audioEnabled ? 'Desativar Sons' : 'Ativar Sons'}
         >
-          {audioEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-          {audioEnabled ? 'Som Ativo' : 'Som Mudo'}
+          {audioEnabled ? <Volume2 size={14} className="sm:w-4 sm:h-4" /> : <VolumeX size={14} className="sm:w-4 sm:h-4" />}
+          {audioEnabled ? 'Som Ativo' : 'Mudo'}
         </button>
         <button
           onClick={() => setShowRulesModal(true)}
-          className="bg-indigo-600/80 hover:bg-indigo-600 text-white px-6 py-2 rounded-full text-sm transition-all flex items-center gap-2 border border-indigo-400/30 shadow-lg"
+          className="bg-indigo-600/80 hover:bg-indigo-600 text-white px-4 py-2 sm:px-6 sm:py-2 rounded-full text-[10px] sm:text-sm transition-all flex items-center gap-2 border border-indigo-400/30 shadow-lg"
         >
-          <HelpCircle size={16} /> Regras e Custos
+          <HelpCircle size={14} className="sm:w-4 sm:h-4" /> Regras
         </button>
         <button
           onClick={() => setShowAdjustModal(true)}
-          className="bg-white/5 hover:bg-white/10 text-white/70 px-6 py-2 rounded-full text-sm transition-all flex items-center gap-2 border border-white/5"
+          className="bg-white/5 hover:bg-white/10 text-white/70 px-4 py-2 sm:px-6 sm:py-2 rounded-full text-[10px] sm:text-sm transition-all flex items-center gap-2 border border-white/5"
         >
-          ⚙️ Ajustes do Tabuleiro
+          ⚙️ Ajustes
         </button>
         <button
           onClick={() => setDebugMode(!debugMode)}
-          className={`px-6 py-2 rounded-full text-sm transition-all flex items-center gap-2 border ${debugMode ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'bg-white/5 text-white/70 border-white/5'}`}
+          className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full text-[10px] sm:text-sm transition-all flex items-center gap-2 border ${debugMode ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'bg-white/5 text-white/70 border-white/5'}`}
         >
-          🔍 Modo Debug
+          🔍 Debug
         </button>
         <button
           onClick={() => setShowVertexNumbers(!showVertexNumbers)}
-          className={`px-6 py-2 rounded-full text-sm transition-all flex items-center gap-2 border ${showVertexNumbers ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'bg-white/5 text-white/70 border-white/5'}`}
+          className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full text-[10px] sm:text-sm transition-all flex items-center gap-2 border ${showVertexNumbers ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'bg-white/5 text-white/70 border-white/5'}`}
         >
-          🔢 Mostrar Números
+          🔢 Números
         </button>
       </div>
 
