@@ -960,6 +960,12 @@ useEffect(() => {
 
 const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
   if (!initialized) return;
+  
+  // Impede ações se não for o turno do jogador (a menos que esteja em debugMode)
+  if (!debugMode && myPlayerId !== gameState.currentTurn) {
+    return;
+  }
+
   const canvas = canvasRef.current;
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
@@ -1146,6 +1152,12 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
 
   const rollDice = () => {
     if (gameState.gamePhase === 'setup') return;
+    
+    // Impede ações se não for o turno do jogador (a menos que esteja em debugMode)
+    if (!debugMode && myPlayerId !== gameState.currentTurn) {
+      return;
+    }
+
     playSound('dice');
     
     const d1 = Math.floor(Math.random() * 6) + 1;
@@ -1630,6 +1642,15 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               </span>
             </div>
 
+            {myPlayerId && (
+              <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
+                <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">Você:</span>
+                <span className="font-black text-xs sm:text-base" style={{ color: PLAYERS[myPlayerId].color }}>
+                  {PLAYERS[myPlayerId].name}
+                </span>
+              </div>
+            )}
+
             <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10 flex items-center gap-2">
               <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold">Pontos:</span>
               <div className="flex gap-1.5">
@@ -1646,9 +1667,9 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               <div className="flex gap-2 mt-2 md:mt-0">
                 <button
                   onClick={rollDice}
-                  disabled={gameState.dice[0] > 0}
+                  disabled={gameState.dice[0] > 0 || (!debugMode && myPlayerId !== gameState.currentTurn)}
                   className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full flex items-center gap-2 transition-all shadow-lg font-bold text-sm sm:text-base ${
-                    gameState.dice[0] === 0 
+                    (gameState.dice[0] === 0 && (debugMode || myPlayerId === gameState.currentTurn))
                     ? 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:scale-105' 
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
@@ -1659,6 +1680,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                 
                 <button
                   onClick={() => {
+                    if (!debugMode && myPlayerId !== gameState.currentTurn) return;
                     playSound('nextTurn');
                     setGameState(prev => ({
                       ...prev,
@@ -1667,9 +1689,9 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                     }));
                     setSelectedSettlement(null);
                   }}
-                  disabled={gameState.dice[0] === 0}
+                  disabled={gameState.dice[0] === 0 || (!debugMode && myPlayerId !== gameState.currentTurn)}
                   className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full flex items-center gap-2 transition-all shadow-lg font-bold text-sm sm:text-base ${
-                    gameState.dice[0] > 0 
+                    (gameState.dice[0] > 0 && (debugMode || myPlayerId === gameState.currentTurn))
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white transform hover:scale-105' 
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
@@ -1691,22 +1713,22 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-center lg:items-end justify-between">
           <div className="flex gap-2 sm:gap-3 justify-center w-full lg:w-auto">
             <button
-              onClick={() => gameState.gamePhase === 'playing' && setMode('settlement')}
-              disabled={gameState.gamePhase === 'setup'}
+              onClick={() => gameState.gamePhase === 'playing' && (debugMode || myPlayerId === gameState.currentTurn) && setMode('settlement')}
+              disabled={gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)}
               className={`flex-1 sm:flex-none px-4 py-3 sm:px-6 sm:py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all text-sm sm:text-base ${
                 mode === 'settlement' ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 grayscale'
-              } ${gameState.gamePhase === 'setup' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
+              } ${ (gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
             >
               <Home size={20} />
               <span className="hidden sm:inline">Vila</span>
               <span className="sm:hidden">Vila</span>
             </button>
             <button
-              onClick={() => gameState.gamePhase === 'playing' && setMode('road')}
-              disabled={gameState.gamePhase === 'setup'}
+              onClick={() => gameState.gamePhase === 'playing' && (debugMode || myPlayerId === gameState.currentTurn) && setMode('road')}
+              disabled={gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)}
               className={`flex-1 sm:flex-none px-4 py-3 sm:px-6 sm:py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all text-sm sm:text-base ${
                 mode === 'road' ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 grayscale'
-              } ${gameState.gamePhase === 'setup' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
+              } ${ (gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 <path d="M6 12h12M12 6v12"/>
@@ -1715,11 +1737,11 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               <span className="sm:hidden">Estr.</span>
             </button>
             <button
-              onClick={() => gameState.gamePhase === 'playing' && setMode('city')}
-              disabled={gameState.gamePhase === 'setup'}
+              onClick={() => gameState.gamePhase === 'playing' && (debugMode || myPlayerId === gameState.currentTurn) && setMode('city')}
+              disabled={gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)}
               className={`flex-1 sm:flex-none px-4 py-3 sm:px-6 sm:py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all text-sm sm:text-base ${
                 mode === 'city' ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 grayscale'
-              } ${gameState.gamePhase === 'setup' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
+              } ${ (gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
             >
               <Building size={20} />
               <span className="hidden sm:inline">Cidade</span>
