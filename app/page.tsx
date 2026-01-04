@@ -159,10 +159,11 @@ type GameState = {
     cities: Map<string, Ownership>;
   };
   currentTurn: number;
-  gamePhase: 'setup' | 'playing';
+  gamePhase: 'lobby' | 'setup' | 'playing';
   dice: [number, number];
   setupTurn: number;
   setupSubPhase: 'settlement' | 'road';
+  playerCount: number;
 };
 
 export default function CatanGame() {
@@ -170,6 +171,21 @@ export default function CatanGame() {
   const [roomCode, setRoomCode] = useState('');
   const [isJoined, setIsJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [myPlayerId, setMyPlayerId] = useState<number | null>(null);
+  const [presencePlayers, setPresencePlayers] = useState<any[]>([]);
+  const [mode, setMode] = useState<'settlement' | 'road' | 'city'>('settlement');
+  const [debugMode, setDebugMode] = useState(false);
+  const [hoveredPosition, setHoveredPosition] = useState<{ type: string; id: string } | null>(null);
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showVertexNumbers, setShowVertexNumbers] = useState(true);
+  const [selectedSettlement, setSelectedSettlement] = useState<string | null>(null);
+  const [allowedEdges, setAllowedEdges] = useState<string[]>([]);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
+  
+  const sessionId = useMemo(() => Math.random().toString(36).substring(7), []);
 
   const [gameState, setGameStateInternal] = useState<GameState>(() => {
     const { vertices, edges } = buildGraphFromHexagons(DEFAULT_HEXAGONS);
@@ -194,10 +210,11 @@ export default function CatanGame() {
         cities: new Map(),
       },
       currentTurn: 1,
-      gamePhase: 'setup',
+      gamePhase: 'lobby',
       dice: [0, 0],
       setupTurn: 0,
-      setupSubPhase: 'settlement'
+      setupSubPhase: 'settlement',
+      playerCount: 4
     };
   });
 
@@ -296,8 +313,15 @@ export default function CatanGame() {
   useEffect(() => {
     if (!isJoined || !roomCode) return;
 
-    const channel = supabase
-      .channel(`room:${roomCode}`)
+    const channel = supabase.channel(`room:${roomCode}`, {
+      config: {
+        presence: {
+          key: roomCode,
+        },
+      },
+    });
+
+    channel
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
@@ -311,17 +335,81 @@ export default function CatanGame() {
           }
         }
       })
-      .subscribe();
+      .on('presence', { event: 'sync' }, () => {
+        const newState = channel.presenceState();
+        const presences = Object.values(newState).flat();
+        
+        // Remover duplicados por session_id (comum durante reconexões rápidas)
+        const uniquePresencesMap = new Map();
+        presences.forEach((p: any) => {
+          if (!uniquePresencesMap.has(p.session_id) || 
+              new Date(p.joined_at) > new Date(uniquePresencesMap.get(p.session_id).joined_at)) {
+            uniquePresencesMap.set(p.session_id, p);
+          }
+        });
+        const uniquePresences = Array.from(uniquePresencesMap.values());
+
+        // Ordenar presenças por data de entrada para garantir IDs consistentes
+        const sortedPresences = uniquePresences.sort((a: any, b: any) => a.joined_at.localeCompare(b.joined_at));
+        setPresencePlayers(sortedPresences);
+        
+        const myIdx = sortedPresences.findIndex((p: any) => p.session_id === sessionId);
+        if (myIdx !== -1) {
+          setMyPlayerId(myIdx + 1);
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            session_id: sessionId,
+            joined_at: new Date().toISOString(),
+          });
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isJoined, roomCode]);
+  }, [isJoined, roomCode, sessionId]);
 
   const initialized = gameState.board.hexagons.length > 0;
-  const setupOrder = [1, 2, 3, 4, 4, 3, 2, 1];
-  
-  const [mode, setMode] = useState<'settlement' | 'road' | 'city'>('settlement');
+  const setupOrder = useMemo(() => {
+    const pCount = gameState.playerCount;
+    const firstRound = Array.from({ length: pCount }, (_, i) => i + 1);
+    const secondRound = [...firstRound].reverse();
+    return [...firstRound, ...secondRound];
+  }, [gameState.playerCount]);
+
+  const startGame = useCallback(() => {
+    if (presencePlayers.length < 2 && !debugMode) return;
+    
+    setGameState(prev => {
+      const numPlayers = debugMode ? 4 : presencePlayers.length;
+      const initialResources: Record<number, Record<string, number>> = {};
+      
+      const players: Record<number, any> = {};
+      for (let i = 1; i <= 4; i++) {
+        if (i <= numPlayers) {
+          players[i] = { 
+            ...PLAYERS[i], 
+            resources: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 } 
+          };
+        } else {
+          // Remover jogadores extras
+          delete players[i];
+        }
+      }
+
+      return {
+        ...prev,
+        players,
+        playerCount: numPlayers,
+        gamePhase: 'setup',
+        currentTurn: 1,
+        setupTurn: 0,
+      };
+    });
+  }, [presencePlayers, setGameState, debugMode]);
   
   // Sincroniza o modo com a fase de setup
   useEffect(() => {
@@ -329,17 +417,6 @@ export default function CatanGame() {
       setMode(gameState.setupSubPhase);
     }
   }, [gameState.gamePhase, gameState.setupSubPhase]);
-
-  const [hoveredPosition, setHoveredPosition] = useState<{ type: string; id: string } | null>(null);
-  const [showAdjustModal, setShowAdjustModal] = useState(false);
-  const [showRulesModal, setShowRulesModal] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
-  const [showVertexNumbers, setShowVertexNumbers] = useState(true);
-  const [selectedSettlement, setSelectedSettlement] = useState<string | null>(null);
-  const [allowedEdges, setAllowedEdges] = useState<string[]>([]);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
 
   // Efeito para simular o carregamento inicial do tabuleiro após entrar na sala
   useEffect(() => {
@@ -435,11 +512,12 @@ export default function CatanGame() {
   }, [audioEnabled]);
 
   const playerVPs = useMemo(() => {
-    const vps: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
-    gameState.board.settlements.forEach(own => { vps[own.player] += 1; });
-    gameState.board.cities.forEach(own => { vps[own.player] += 2; });
+    const vps: Record<number, number> = {};
+    for (let i = 1; i <= gameState.playerCount; i++) vps[i] = 0;
+    gameState.board.settlements.forEach(own => { if (vps[own.player] !== undefined) vps[own.player] += 1; });
+    gameState.board.cities.forEach(own => { if (vps[own.player] !== undefined) vps[own.player] += 2; });
     return vps;
-  }, [gameState.board.settlements, gameState.board.cities]);
+  }, [gameState.board.settlements, gameState.board.cities, gameState.playerCount]);
 
   const winner = useMemo(() => {
     const winnerEntry = Object.entries(playerVPs).find(([_, vps]) => (vps as number) >= 10);
@@ -521,12 +599,12 @@ export default function CatanGame() {
 
 useEffect(() => {
   if (!initialized) {
-    console.log('Drawing aborted: not initialized');
+    if (debugMode) console.log('Drawing aborted: not initialized');
     return;
   }
   const canvas = canvasRef.current;
   if (!canvas) {
-    console.log('Drawing aborted: no canvas');
+    if (debugMode) console.log('Drawing aborted: no canvas');
     return;
   }
   const ctx = canvas.getContext('2d');
@@ -778,22 +856,22 @@ useEffect(() => {
       let closestEdge: { type: 'edge'; id: string } | null = null;
       let minEdgeDist = Infinity;
       let closestVertex: { type: 'vertex'; id: string } | null = null;
-        let minVertexDist = Infinity;
+      let minVertexDist = Infinity;
 
       // 1. Procurar vértices do jogador
       gameState.board.vertices.forEach(vertex => {
-          if (vertex?.x === undefined) return;
+        if (vertex?.x === undefined) return;
         const hasOwnBuilding = (gameState.board.settlements.has(vertex.id) && gameState.board.settlements.get(vertex.id)?.player === gameState.currentTurn) ||
                                (gameState.board.cities.has(vertex.id) && gameState.board.cities.get(vertex.id)?.player === gameState.currentTurn);
         
         if (hasOwnBuilding) {
           const dist = Math.hypot(vertex.x - mouseX, vertex.y - mouseY);
           if (dist < minVertexDist && dist < 40) {
-              minVertexDist = dist;
-              closestVertex = { type: 'vertex', id: vertex.id };
-            }
+            minVertexDist = dist;
+            closestVertex = { type: 'vertex', id: vertex.id };
           }
-        });
+        }
+      });
 
       // 2. Procurar arestas válidas para estrada
       gameState.board.edges.forEach(edge => {
@@ -807,11 +885,10 @@ useEffect(() => {
       });
 
       // Prioridade: se houver uma aresta válida muito perto do clique, damos preferência a ela
-      // para facilitar a construção contínua de estradas sem precisar clicar na vila toda hora.
       if (closestEdge && (minEdgeDist < minVertexDist || !closestVertex)) {
         return closestEdge;
       }
-        return closestVertex;
+      return closestVertex;
     } else {
       let closest: { type: 'vertex' | 'edge'; id: string } | null = null;
       let minDist = Infinity;
@@ -924,8 +1001,8 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
 
         if (prev.gamePhase === 'setup') {
           const vertex = prev.board.vertices.find(v => v.id === position.id);
-          // Se for o segundo round de setup (turns 4 a 7), ganha recursos iniciais
-          if (prev.setupTurn >= 4 && vertex) {
+          // Se for o segundo round de setup, ganha recursos iniciais
+          if (prev.setupTurn >= prev.playerCount && vertex) {
             const newPlayers = { ...newState.players };
             const p = prev.currentTurn;
             prev.board.hexagons.forEach(hex => {
@@ -993,7 +1070,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
           newState.board = { ...prev.board, roads: newRoads };
 
           if (prev.gamePhase === 'setup') {
-            if (prev.setupTurn < 7) {
+            if (prev.setupTurn < setupOrder.length - 1) {
               newState.setupTurn = prev.setupTurn + 1;
               newState.setupSubPhase = 'settlement';
               // Na fase de setup, o currentTurn segue a ordem setupOrder
@@ -1222,6 +1299,78 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
           
           <p className="mt-6 sm:mt-8 text-white/20 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
             Multiplayer Realtime • Supabase Connected
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState.gamePhase === 'lobby') {
+    return (
+      <div className="min-h-screen bg-[#1a4a6e] flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#2a2a2a] p-6 sm:p-8 rounded-3xl shadow-2xl border border-white/10 text-center">
+          <h1 className="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tighter italic">CATAN</h1>
+          <p className="text-gray-400 mb-6 font-medium text-sm sm:text-base">Sala: <span className="text-white font-bold tracking-widest">{roomCode}</span></p>
+          
+          <div className="bg-black/30 rounded-2xl p-4 mb-6 border border-white/5">
+            <h2 className="text-white/40 font-bold text-[10px] uppercase tracking-[0.2em] mb-4">Aguardando Jogadores ({presencePlayers.length})</h2>
+            <div className="space-y-2">
+              {presencePlayers.map((p, idx) => (
+                <div key={p.session_id} className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5 transition-all hover:bg-white/10">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shadow-lg" style={{ backgroundColor: PLAYERS[idx + 1]?.color || '#ccc', color: (idx + 1) === 3 ? '#000' : '#fff' }}>
+                    {idx + 1}
+                  </div>
+                  <span className="text-white font-bold text-sm">{p.session_id === sessionId ? 'Você' : `Jogador ${idx + 1}`}</span>
+                  {p.session_id === sessionId && <span className="ml-auto text-[9px] bg-amber-500 text-black px-2 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-lg">Eu</span>}
+                </div>
+              ))}
+              
+              {/* Slots vazios */}
+              {Array.from({ length: Math.max(0, 4 - presencePlayers.length) }).map((_, i) => (
+                <div key={`empty-${i}`} className="flex items-center gap-3 bg-black/20 p-3 rounded-xl border border-dashed border-white/5 opacity-50">
+                  <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center font-bold text-sm text-gray-600">
+                    {presencePlayers.length + i + 1}
+                  </div>
+                  <span className="text-gray-600 font-bold text-sm italic">Vago</span>
+                </div>
+              ))}
+            </div>
+
+            {presencePlayers.length < 2 && !debugMode && (
+              <div className="mt-6 flex flex-col items-center">
+                <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mb-3" />
+                <p className="text-amber-500/80 text-[10px] font-black uppercase tracking-widest animate-pulse">Aguardando pelo menos mais 1 jogador...</p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={startGame}
+              disabled={presencePlayers.length < 2 && !debugMode}
+              className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-black text-lg sm:text-xl transition-all ${
+                presencePlayers.length < 2 && !debugMode
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_10px_30px_rgba(5,150,105,0.3)] border-b-4 border-emerald-800'
+              }`}
+            >
+              INICIAR JOGO
+            </button>
+            
+            <button
+              onClick={() => setDebugMode(!debugMode)}
+              className={`w-full py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${
+                debugMode 
+                ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' 
+                : 'bg-white/5 text-white/20 border-white/10 hover:bg-white/10'
+              }`}
+            >
+              Modo Debug: {debugMode ? 'ATIVADO' : 'DESATIVADO'}
+            </button>
+          </div>
+          
+          <p className="mt-8 text-white/10 text-[9px] font-bold uppercase tracking-[0.3em] leading-relaxed">
+            O progresso será sincronizado<br/>para todos na sala
           </p>
         </div>
       </div>
@@ -1484,7 +1633,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
             <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10 flex items-center gap-2">
               <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold">Pontos:</span>
               <div className="flex gap-1.5">
-                {[1, 2, 3, 4].map(p => (
+                {Array.from({ length: gameState.playerCount }, (_, i) => i + 1).map(p => (
                   <div key={p} className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PLAYERS[p].color }} />
                     <span className="text-white font-black text-xs sm:text-sm">{playerVPs[p]}</span>
@@ -1514,7 +1663,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                     setGameState(prev => ({
                       ...prev,
                       dice: [0, 0],
-                      currentTurn: (prev.currentTurn % 4) + 1
+                      currentTurn: (prev.currentTurn % prev.playerCount) + 1
                     }));
                     setSelectedSettlement(null);
                   }}

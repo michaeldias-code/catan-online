@@ -34,10 +34,13 @@ Estes arquivos JavaScript foram criados para analisar e validar a estrutura do t
 ## 🛠️ Notas Técnicas de Manutenção
 
 ### Sistema de Construção de Estradas
-A lógica foi unificada para garantir consistência total entre o que o jogador vê e o que ele pode clicar:
-1.  **Renderização**: O `useEffect` de desenho usa `allowedEdges` para pintar as bolinhas amarelas.
-2.  **Interação**: `findClosestPosition` agora filtra arestas no modo estrada, permitindo apenas o retorno de IDs presentes na lógica de "bolinhas amarelas".
-3.  **Prioridade de Clique**: No modo estrada, o sistema prioriza o clique em arestas válidas se estiverem próximas, mas ainda permite clicar em vilas próprias para trocar a origem da construção.
+A lógica foi unificada e blindada para garantir que o jogador apenas interaja com caminhos válidos:
+1.  **Renderização**: O `useEffect` de desenho principal usa o estado `allowedEdges` para pintar as bolinhas amarelas nos pontos médios das arestas disponíveis.
+2.  **Interação Restrita**: A função `findClosestPosition` foi refatorada para atuar como um filtro de segurança. No modo `road`, ela:
+    *   Permite selecionar/trocar a construção de origem (Vilas/Cidades do próprio jogador).
+    *   Bloqueia qualquer retorno de ID de aresta que não esteja na lista de movimentos permitidos (sincronizado com as bolinhas amarelas).
+3.  **Feedback Visual**: O efeito de `hover` agora respeita essas restrições, aparecendo apenas sobre elementos que realmente podem ser clicados.
+4.  **UX de Seleção**: O sistema prioriza a aresta válida mais próxima, mas mantém a sensibilidade sobre as vilas próprias para permitir a mudança rápida de estratégia sem sair do modo de construção.
 
 ### Segurança e Variáveis de Ambiente
 O projeto agora utiliza variáveis de ambiente para proteger as chaves do Supabase:

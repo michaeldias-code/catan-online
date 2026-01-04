@@ -1,6 +1,6 @@
 # Progresso do Projeto Catan
 
-Status atual das funcionalidades do jogo e roteiro para versão multiplayer online.
+Status atual das funcionalidades do jogo e roteiro para versão multiplayer online. O jogo encontra-se atualmente em estado **jogável**, com todas as regras básicas de construção e economia implementadas.
 
 **Link do Jogo:** [opencatan.vercel.app](https://opencatan.vercel.app)
 **Repositório:** [github.com/michaeldias-code/catan-online](https://github.com/michaeldias-code/catan-online)
@@ -21,10 +21,10 @@ Status atual das funcionalidades do jogo e roteiro para versão multiplayer onli
 - [x] **Posicionamento de Estradas (Roads)**:
     - [x] Lógica de conectividade a partir de construções existentes.
     - [x] **Destaque Visual**: Bolinhas amarelas indicando onde é permitido construir.
-    - [x] **Trava de Construção**: Impedimento de cliques em locais não permitidos, sincronizado com o visual das bolinhas amarelas.
+    - [x] **Trava de Construção**: Impedimento total de cliques em locais não permitidos, garantindo que o jogador siga as regras.
     - [x] **Seleção Inteligente**: Melhoria na detecção de cliques para priorizar seleção de vilas ou construção de estradas conforme o contexto.
-    - [x] **Refinamento de UX**: Implementação de prioridade de clique para facilitar a construção contínua de estradas.
-- [x] **Upgrade para Cidades (Cities)**: Substituição de aldeias por cidades com custo de 2 Trigo e 3 Minérios.
+    - [x] **Refinamento de UX**: Implementação de prioridade de clique e restrição de interação apenas a elementos válidos.
+- [x] **Upgrade para Cidades (Cities)**: Substituição de aldeias por cidades com ganho de recursos dobrado.
 - [x] **Sistema de Economia e Recursos**:
     - [x] **Distribuição por Dados**: Ganho automático de recursos ao tirar o número correspondente no dado.
     - [x] **Produção Dupla**: Cidades produzem 2 recursos em vez de 1.
