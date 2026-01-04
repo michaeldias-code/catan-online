@@ -3,6 +3,173 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Dices, Home, Building, Info, HelpCircle, Volume2, VolumeX, LogIn } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+type Language = 'pt' | 'en';
+
+const TRANSLATIONS = {
+  pt: {
+    title: 'CATAN',
+    roomCode: 'CÓDIGO DA SALA',
+    enterRoom: 'ENTRAR NA SALA',
+    insertRoomCode: 'Insira o código da sala para começar',
+    waitingPlayers: 'Aguardando Jogadores',
+    you: 'Você',
+    me: 'Eu',
+    vacant: 'Vago',
+    waitingMorePlayers: 'Aguardando pelo menos mais 1 jogador...',
+    startGame: 'INICIAR JOGO',
+    debugMode: 'Modo Debug',
+    activated: 'ATIVADO',
+    desactivated: 'DESATIVADO',
+    room: 'Sala',
+    realtimeActive: 'Realtime Ativo',
+    rulesAndCosts: 'REGRAS E CUSTOS',
+    buildingCosts: 'Custos de Construção',
+    road: 'Estrada',
+    settlement: 'Vila',
+    city: 'Cidade',
+    wood: 'Madeira',
+    brick: 'Tijolo',
+    sheep: 'Ovelha',
+    wheat: 'Trigo',
+    ore: 'Minério',
+    desert: 'Deserto',
+    quickRules: 'Regras Rápidas',
+    rule1: 'Cada Vila vale 1 ponto. Cidades valem 2 pontos.',
+    rule2: 'Cidades produzem o DOBRO de recursos.',
+    rule3: 'Vença ao atingir 10 pontos.',
+    gotIt: 'ENTENDI!',
+    winner: 'VENCEDOR!',
+    conqueredCatan: 'conquistou Catan!',
+    playAgain: 'Jogar Novamente',
+    adjustPosition: 'Ajuste de Posição',
+    copyJson: 'Copiar JSON',
+    load: 'Carregar',
+    hexagon: 'Hexágono',
+    position: 'Posição',
+    phase: 'Fase',
+    setup: 'Configuração',
+    playing: 'Em Jogo',
+    turn: 'Turno',
+    points: 'Pontos',
+    dice: 'Dados',
+    rolled: 'Lançados',
+    passTurn: 'Passar Turno',
+    resources: 'Recursos',
+    loadingBoard: 'Carregando Tabuleiro...',
+    prepareStrategy: 'Prepare sua estratégia!',
+    chooseInitialSettlement: 'Escolha sua VILA inicial',
+    chooseInitialRoad: 'Agora construa a ESTRADA adjacente',
+    soundActive: 'Som Ativo',
+    mute: 'Mudo',
+    rules: 'Regras',
+    adjusts: 'Ajustes',
+    debug: 'Debug',
+    numbers: 'Números',
+    player: 'Jogador',
+    availableRoads: 'Estradas disponíveis',
+    noConnectedRoadsFound: 'Nenhuma estrada conectada encontrada',
+    noSettlementsBuiltYet: 'Nenhuma vila construída ainda.',
+    debugRoadsPerSettlement: 'Debug - estradas conectadas por vila',
+    modeSettlement: 'Modo Vila: Clique nos vértices para construir vilas',
+    modeRoad: 'Modo Estrada: Clique em uma vila sua, depois clique na aresta para construir estrada',
+    modeCity: 'Modo Cidade: Clique em uma vila sua para transformá-la em cidade',
+    settlementSelected: 'Vila selecionada! Clique em uma aresta conectada para construir estrada',
+    insufficientResourcesSettlement: 'Recursos insuficientes para construir uma Vila!',
+    insufficientResourcesRoad: 'Recursos insuficientes para construir uma Estrada!',
+    insufficientResourcesCity: 'Recursos insuficientes para construir uma Cidade!',
+    thiefMoves: '7! O ladrão se move (regra não implementada).',
+    contributeGithub: 'Contribuir no GitHub',
+    developedForCommunity: '© 2026 Open Catan - Desenvolvido para a comunidade',
+    players: {
+      1: 'Vermelho',
+      2: 'Azul',
+      3: 'Branco',
+      4: 'Laranja'
+    }
+  },
+  en: {
+    title: 'CATAN',
+    roomCode: 'ROOM CODE',
+    enterRoom: 'JOIN ROOM',
+    insertRoomCode: 'Enter room code to start',
+    waitingPlayers: 'Waiting for Players',
+    you: 'You',
+    me: 'Me',
+    vacant: 'Vacant',
+    waitingMorePlayers: 'Waiting for at least 1 more player...',
+    startGame: 'START GAME',
+    debugMode: 'Debug Mode',
+    activated: 'ON',
+    desactivated: 'OFF',
+    room: 'Room',
+    realtimeActive: 'Realtime Active',
+    rulesAndCosts: 'RULES AND COSTS',
+    buildingCosts: 'Building Costs',
+    road: 'Road',
+    settlement: 'Settlement',
+    city: 'City',
+    wood: 'Wood',
+    brick: 'Brick',
+    sheep: 'Sheep',
+    wheat: 'Wheat',
+    ore: 'Ore',
+    desert: 'Desert',
+    quickRules: 'Quick Rules',
+    rule1: 'Each Settlement is worth 1 point. Cities are worth 2 points.',
+    rule2: 'Cities produce DOUBLE resources.',
+    rule3: 'Win by reaching 10 points.',
+    gotIt: 'GOT IT!',
+    winner: 'WINNER!',
+    conqueredCatan: 'conquered Catan!',
+    playAgain: 'Play Again',
+    adjustPosition: 'Adjust Position',
+    copyJson: 'Copy JSON',
+    load: 'Load',
+    hexagon: 'Hexagon',
+    position: 'Position',
+    phase: 'Phase',
+    setup: 'Setup',
+    playing: 'Playing',
+    turn: 'Turn',
+    points: 'Points',
+    dice: 'Dice',
+    rolled: 'Rolled',
+    passTurn: 'End Turn',
+    resources: 'Resources',
+    loadingBoard: 'Loading Board...',
+    prepareStrategy: 'Prepare your strategy!',
+    chooseInitialSettlement: 'Choose your starting SETTLEMENT',
+    chooseInitialRoad: 'Now build the adjacent ROAD',
+    soundActive: 'Sound On',
+    mute: 'Muted',
+    rules: 'Rules',
+    adjusts: 'Settings',
+    debug: 'Debug',
+    numbers: 'Numbers',
+    player: 'Player',
+    availableRoads: 'Available roads',
+    noConnectedRoadsFound: 'No connected roads found',
+    noSettlementsBuiltYet: 'No settlements built yet.',
+    debugRoadsPerSettlement: 'Debug - roads connected per settlement',
+    modeSettlement: 'Settlement Mode: Click vertices to build settlements',
+    modeRoad: 'Road Mode: Click one of your settlements, then click an edge to build a road',
+    modeCity: 'City Mode: Click one of your settlements to upgrade it to a city',
+    settlementSelected: 'Settlement selected! Click a connected edge to build a road',
+    insufficientResourcesSettlement: 'Insufficient resources to build a Settlement!',
+    insufficientResourcesRoad: 'Insufficient resources to build a Road!',
+    insufficientResourcesCity: 'Insufficient resources to build a City!',
+    thiefMoves: '7! The robber moves (rule not implemented).',
+    contributeGithub: 'Contribute on GitHub',
+    developedForCommunity: '© 2026 Open Catan - Developed for the community',
+    players: {
+      1: 'Red',
+      2: 'Blue',
+      3: 'White',
+      4: 'Orange'
+    }
+  }
+};
+
 type Hexagon = {
   id: string;
   x: number;
@@ -108,20 +275,20 @@ const DEFAULT_HEXAGONS: Hexagon[] = [
   { id: "hex_18", x: 815, y: 453, radius: 60, resource: "wheat", number: 9 }
 ];
 
-const RESOURCES: Record<string, { color: string; name: string; icon: string; textColor: string }> = {
-  wood: { color: '#2D5A27', name: 'Madeira', icon: '🌲', textColor: '#FFFFFF' },
-  brick: { color: '#A52A2A', name: 'Tijolo', icon: '🧱', textColor: '#FFFFFF' },
-  sheep: { color: '#88B04B', name: 'Ovelha', icon: '🐑', textColor: '#000000' },
-  wheat: { color: '#F2C94C', name: 'Trigo / Milho', icon: '🌾', textColor: '#000000' },
-  ore: { color: '#7B8D8E', name: 'Minério', icon: '⛰️', textColor: '#FFFFFF' },
-  desert: { color: '#E3C58E', name: 'Deserto', icon: '🏜️', textColor: '#000000' }
+const RESOURCES: Record<string, { color: string; icon: string; textColor: string; translationKey: keyof typeof TRANSLATIONS.pt }> = {
+  wood: { color: '#2D5A27', icon: '🌲', textColor: '#FFFFFF', translationKey: 'wood' },
+  brick: { color: '#A52A2A', icon: '🧱', textColor: '#FFFFFF', translationKey: 'brick' },
+  sheep: { color: '#88B04B', icon: '🐑', textColor: '#000000', translationKey: 'sheep' },
+  wheat: { color: '#F2C94C', icon: '🌾', textColor: '#000000', translationKey: 'wheat' },
+  ore: { color: '#7B8D8E', icon: '⛰️', textColor: '#FFFFFF', translationKey: 'ore' },
+  desert: { color: '#E3C58E', icon: '🏜️', textColor: '#000000', translationKey: 'desert' }
 };
 
-const PLAYERS: Record<number, { color: string; name: string }> = {
-  1: { color: '#FF4444', name: 'Vermelho' },
-  2: { color: '#4444FF', name: 'Azul' },
-  3: { color: '#FFFFFF', name: 'Branco' },
-  4: { color: '#FFA500', name: 'Laranja' }
+const PLAYERS: Record<number, { color: string }> = {
+  1: { color: '#FF4444' },
+  2: { color: '#4444FF' },
+  3: { color: '#FFFFFF' },
+  4: { color: '#FFA500' }
 };
 
 const SOUNDS: Record<string, string> = {
@@ -168,6 +335,9 @@ type GameState = {
 
 export default function CatanGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [language, setLanguage] = useState<Language>('pt');
+  const t = TRANSLATIONS[language];
+
   const [roomCode, setRoomCode] = useState('');
   const [isJoined, setIsJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -196,10 +366,10 @@ export default function CatanGame() {
 
     return {
       players: {
-        1: { ...PLAYERS[1], resources: initialResources[1] },
-        2: { ...PLAYERS[2], resources: initialResources[2] },
-        3: { ...PLAYERS[3], resources: initialResources[3] },
-        4: { ...PLAYERS[4], resources: initialResources[4] },
+        1: { ...PLAYERS[1], name: TRANSLATIONS[language].players[1], resources: initialResources[1] },
+        2: { ...PLAYERS[2], name: TRANSLATIONS[language].players[2], resources: initialResources[2] },
+        3: { ...PLAYERS[3], name: TRANSLATIONS[language].players[3], resources: initialResources[3] },
+        4: { ...PLAYERS[4], name: TRANSLATIONS[language].players[4], resources: initialResources[4] },
       },
       board: {
         hexagons: DEFAULT_HEXAGONS,
@@ -392,6 +562,7 @@ export default function CatanGame() {
         if (i <= numPlayers) {
           players[i] = { 
             ...PLAYERS[i], 
+            name: TRANSLATIONS[language].players[i as keyof typeof TRANSLATIONS.pt.players],
             resources: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 } 
           };
         } else {
@@ -985,7 +1156,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
           const canAfford = Object.entries(cost).every(([res, count]) => (resources[res] || 0) >= count);
           
           if (!canAfford) {
-            alert("Recursos insuficientes para construir uma Vila!");
+            alert(t.insufficientResourcesSettlement);
             return prev;
           }
 
@@ -1055,7 +1226,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
             const canAfford = Object.entries(cost).every(([res, count]) => (resources[res] || 0) >= count);
             
             if (!canAfford) {
-              alert("Recursos insuficientes para construir uma Estrada!");
+              alert(t.insufficientResourcesRoad);
               return prev;
             }
 
@@ -1106,7 +1277,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const canAfford = Object.entries(cost).every(([res, count]) => (resources[res] || 0) >= count);
         
         if (!canAfford) {
-          alert("Recursos insuficientes para construir uma Cidade!");
+          alert(t.insufficientResourcesCity);
           return prev;
         }
 
@@ -1209,7 +1380,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     });
 
     if (total === 7) {
-      alert("7! O ladrão se move (regra não implementada).");
+      alert(t.thiefMoves);
     }
   };
 
@@ -1275,14 +1446,30 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
   if (!isJoined) {
     return (
       <div className="min-h-screen bg-[#1a4a6e] flex flex-col items-center justify-center p-4">
+        {/* Language Toggle */}
+        <div className="absolute top-4 right-4 flex gap-2">
+          <button 
+            onClick={() => setLanguage('pt')}
+            className={`px-3 py-1 rounded-full text-xs font-black transition-all ${language === 'pt' ? 'bg-amber-500 text-black shadow-lg' : 'bg-white/10 text-white/40 hover:bg-white/20'}`}
+          >
+            BR PT
+          </button>
+          <button 
+            onClick={() => setLanguage('en')}
+            className={`px-3 py-1 rounded-full text-xs font-black transition-all ${language === 'en' ? 'bg-amber-500 text-black shadow-lg' : 'bg-white/10 text-white/40 hover:bg-white/20'}`}
+          >
+            US EN
+          </button>
+        </div>
+
         <div className="max-w-md w-full bg-[#2a2a2a] p-6 sm:p-8 rounded-3xl shadow-2xl border border-white/10 text-center">
-          <h1 className="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tighter">CATAN</h1>
-          <p className="text-gray-400 mb-6 sm:mb-8 font-medium text-sm sm:text-base">Insira o código da sala para começar</p>
+          <h1 className="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tighter">{t.title}</h1>
+          <p className="text-gray-400 mb-6 sm:mb-8 font-medium text-sm sm:text-base">{t.insertRoomCode}</p>
           
           <div className="space-y-4">
             <input
               type="text"
-              placeholder="CÓDIGO DA SALA"
+              placeholder={t.roomCode}
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
               className="w-full bg-black/30 border-2 border-white/10 rounded-2xl px-4 py-3 sm:px-6 sm:py-4 text-white text-lg sm:text-xl font-bold focus:border-amber-500 outline-none transition-all text-center uppercase tracking-widest"
@@ -1303,7 +1490,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               ) : (
                 <>
                   <LogIn size={24} />
-                  ENTRAR NA SALA
+                  {t.enterRoom}
                 </>
               )}
             </button>
@@ -1320,20 +1507,36 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
   if (gameState.gamePhase === 'lobby') {
     return (
       <div className="min-h-screen bg-[#1a4a6e] flex flex-col items-center justify-center p-4">
+        {/* Language Toggle */}
+        <div className="absolute top-4 right-4 flex gap-2">
+          <button 
+            onClick={() => setLanguage('pt')}
+            className={`px-3 py-1 rounded-full text-xs font-black transition-all ${language === 'pt' ? 'bg-amber-500 text-black shadow-lg' : 'bg-white/10 text-white/40 hover:bg-white/20'}`}
+          >
+            BR PT
+          </button>
+          <button 
+            onClick={() => setLanguage('en')}
+            className={`px-3 py-1 rounded-full text-xs font-black transition-all ${language === 'en' ? 'bg-amber-500 text-black shadow-lg' : 'bg-white/10 text-white/40 hover:bg-white/20'}`}
+          >
+            US EN
+          </button>
+        </div>
+
         <div className="max-w-md w-full bg-[#2a2a2a] p-6 sm:p-8 rounded-3xl shadow-2xl border border-white/10 text-center">
-          <h1 className="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tighter italic">CATAN</h1>
-          <p className="text-gray-400 mb-6 font-medium text-sm sm:text-base">Sala: <span className="text-white font-bold tracking-widest">{roomCode}</span></p>
+          <h1 className="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tighter italic">{t.title}</h1>
+          <p className="text-gray-400 mb-6 font-medium text-sm sm:text-base">{t.room}: <span className="text-white font-bold tracking-widest">{roomCode}</span></p>
           
           <div className="bg-black/30 rounded-2xl p-4 mb-6 border border-white/5">
-            <h2 className="text-white/40 font-bold text-[10px] uppercase tracking-[0.2em] mb-4">Aguardando Jogadores ({presencePlayers.length})</h2>
+            <h2 className="text-white/40 font-bold text-[10px] uppercase tracking-[0.2em] mb-4">{t.waitingPlayers} ({presencePlayers.length})</h2>
             <div className="space-y-2">
               {presencePlayers.map((p, idx) => (
                 <div key={p.session_id} className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5 transition-all hover:bg-white/10">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shadow-lg" style={{ backgroundColor: PLAYERS[idx + 1]?.color || '#ccc', color: (idx + 1) === 3 ? '#000' : '#fff' }}>
                     {idx + 1}
                   </div>
-                  <span className="text-white font-bold text-sm">{p.session_id === sessionId ? 'Você' : `Jogador ${idx + 1}`}</span>
-                  {p.session_id === sessionId && <span className="ml-auto text-[9px] bg-amber-500 text-black px-2 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-lg">Eu</span>}
+                  <span className="text-white font-bold text-sm">{p.session_id === sessionId ? t.you : `${t.player} ${idx + 1}`}</span>
+                  {p.session_id === sessionId && <span className="ml-auto text-[9px] bg-amber-500 text-black px-2 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-lg">{t.me}</span>}
                 </div>
               ))}
               
@@ -1343,7 +1546,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                   <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center font-bold text-sm text-gray-600">
                     {presencePlayers.length + i + 1}
                   </div>
-                  <span className="text-gray-600 font-bold text-sm italic">Vago</span>
+                  <span className="text-gray-600 font-bold text-sm italic">{t.vacant}</span>
                 </div>
               ))}
             </div>
@@ -1351,7 +1554,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
             {presencePlayers.length < 2 && !debugMode && (
               <div className="mt-6 flex flex-col items-center">
                 <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mb-3" />
-                <p className="text-amber-500/80 text-[10px] font-black uppercase tracking-widest animate-pulse">Aguardando pelo menos mais 1 jogador...</p>
+                <p className="text-amber-500/80 text-[10px] font-black uppercase tracking-widest animate-pulse">{t.waitingMorePlayers}</p>
               </div>
             )}
           </div>
@@ -1366,7 +1569,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_10px_30px_rgba(5,150,105,0.3)] border-b-4 border-emerald-800'
               }`}
             >
-              INICIAR JOGO
+              {t.startGame}
             </button>
             
             <button
@@ -1377,12 +1580,12 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                 : 'bg-white/5 text-white/20 border-white/10 hover:bg-white/10'
               }`}
             >
-              Modo Debug: {debugMode ? 'ATIVADO' : 'DESATIVADO'}
+              {t.debugMode}: {debugMode ? t.activated : t.desactivated}
             </button>
           </div>
           
           <p className="mt-8 text-white/10 text-[9px] font-bold uppercase tracking-[0.3em] leading-relaxed">
-            O progresso será sincronizado<br/>para todos na sala
+            {language === 'pt' ? 'O progresso será sincronizado\npara todos na sala' : 'Progress will be synced\nfor everyone in the room'}
           </p>
         </div>
       </div>
@@ -1392,18 +1595,36 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
   return (
     <div className="w-full min-h-screen bg-[#1a4a6e] flex flex-col items-center p-4 overflow-x-hidden relative">
       {/* Indicador de Realtime / Sala */}
-      <div className="fixed top-4 right-4 z-[90] flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-2xl">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-white/70 text-[10px] font-black uppercase tracking-widest">Sala: {roomCode}</span>
-        <div className="w-[1px] h-3 bg-white/20 mx-1" />
-        <span className="text-emerald-500/80 text-[10px] font-black uppercase tracking-widest">Realtime Ativo</span>
+      <div className="fixed top-4 right-4 z-[90] flex flex-col items-end gap-2">
+        <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-2xl">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-white/70 text-[10px] font-black uppercase tracking-widest">{t.room}: {roomCode}</span>
+          <div className="w-[1px] h-3 bg-white/20 mx-1" />
+          <span className="text-emerald-500/80 text-[10px] font-black uppercase tracking-widest">{t.realtimeActive}</span>
+        </div>
+        
+        {/* Language Toggle in Game */}
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setLanguage('pt')}
+            className={`px-3 py-1 rounded-full text-[10px] font-black transition-all ${language === 'pt' ? 'bg-amber-500 text-black shadow-lg' : 'bg-black/40 text-white/40 hover:bg-black/60 border border-white/10'}`}
+          >
+            PT
+          </button>
+          <button 
+            onClick={() => setLanguage('en')}
+            className={`px-3 py-1 rounded-full text-[10px] font-black transition-all ${language === 'en' ? 'bg-amber-500 text-black shadow-lg' : 'bg-black/40 text-white/40 hover:bg-black/60 border border-white/10'}`}
+          >
+            EN
+          </button>
+        </div>
       </div>
       {showRulesModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border-4 border-indigo-600 max-h-[90vh] flex flex-col">
             <div className="bg-indigo-600 p-6 text-white flex justify-between items-center flex-shrink-0">
               <h2 className="text-2xl font-black tracking-tighter flex items-center gap-2">
-                <Info size={28} /> REGRAS E CUSTOS
+                <Info size={28} /> {t.rulesAndCosts}
               </h2>
               <button 
                 onClick={() => setShowRulesModal(false)}
@@ -1419,42 +1640,42 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               {/* Custos de Construção */}
               <div className="space-y-4">
                 <h3 className="text-indigo-900 font-black text-sm sm:text-lg uppercase tracking-widest border-b-2 border-indigo-100 pb-2">
-                  Custos de Construção
+                  {t.buildingCosts}
                 </h3>
                 
                 <div className="grid gap-3 sm:gap-4">
                   <div className="bg-gray-50 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between border border-gray-100 gap-2">
                     <div className="flex items-center gap-3">
                       <div className="bg-amber-500 p-2 rounded-lg text-white flex-shrink-0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M6 12h12M12 6v12"/></svg></div>
-                      <span className="font-bold text-gray-800 text-sm sm:text-base">Estrada</span>
+                      <span className="font-bold text-gray-800 text-sm sm:text-base">{t.road}</span>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <span className="bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#2D5A27]/20">1 🌲 Madeira</span>
-                      <span className="bg-[#A52A2A]/10 text-[#A52A2A] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#A52A2A]/20">1 🧱 Tijolo</span>
+                      <span className="bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#2D5A27]/20">1 🌲 {t.wood}</span>
+                      <span className="bg-[#A52A2A]/10 text-[#A52A2A] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#A52A2A]/20">1 🧱 {t.brick}</span>
                     </div>
                   </div>
 
                   <div className="bg-gray-50 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between border border-gray-100 gap-2">
                     <div className="flex items-center gap-3">
                       <div className="bg-amber-500 p-2 rounded-lg text-white flex-shrink-0"><Home size={18} /></div>
-                      <span className="font-bold text-gray-800 text-sm sm:text-base">Vila</span>
+                      <span className="font-bold text-gray-800 text-sm sm:text-base">{t.settlement}</span>
                     </div>
                     <div className="flex gap-1 flex-wrap justify-start sm:justify-end max-w-full sm:max-w-[200px]">
-                      <span className="bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#2D5A27]/20">1 🌲 Mad.</span>
-                      <span className="bg-[#A52A2A]/10 text-[#A52A2A] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#A52A2A]/20">1 🧱 Tij.</span>
-                      <span className="bg-[#F2C94C]/10 text-[#B8860B] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#F2C94C]/20">1 🌾 Trigo</span>
-                      <span className="bg-[#88B04B]/10 text-[#556B2F] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#88B04B]/20">1 🐑 Ovel.</span>
+                      <span className="bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#2D5A27]/20">1 🌲 {t.wood.substring(0, 4)}.</span>
+                      <span className="bg-[#A52A2A]/10 text-[#A52A2A] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#A52A2A]/20">1 🧱 {t.brick.substring(0, 4)}.</span>
+                      <span className="bg-[#F2C94C]/10 text-[#B8860B] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#F2C94C]/20">1 🌾 {t.wheat}</span>
+                      <span className="bg-[#88B04B]/10 text-[#556B2F] px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black border border-[#88B04B]/20">1 🐑 {t.sheep.substring(0, 4)}.</span>
                     </div>
                   </div>
 
                   <div className="bg-gray-50 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between border border-gray-100 gap-2">
                     <div className="flex items-center gap-3">
                       <div className="bg-amber-500 p-2 rounded-lg text-white flex-shrink-0"><Building size={18} /></div>
-                      <span className="font-bold text-gray-800 text-sm sm:text-base">Cidade</span>
+                      <span className="font-bold text-gray-800 text-sm sm:text-base">{t.city}</span>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <span className="bg-[#F2C94C]/10 text-[#B8860B] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#F2C94C]/20">2 🌾 Trigo</span>
-                      <span className="bg-[#7B8D8E]/10 text-[#4A5D5E] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#7B8D8E]/20">3 ⛰️ Minér.</span>
+                      <span className="bg-[#F2C94C]/10 text-[#B8860B] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#F2C94C]/20">2 🌾 {t.wheat}</span>
+                      <span className="bg-[#7B8D8E]/10 text-[#4A5D5E] px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black border border-[#7B8D8E]/20">3 ⛰️ {t.ore.substring(0, 5)}.</span>
                     </div>
                   </div>
                 </div>
@@ -1463,20 +1684,20 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               {/* Regras Básicas */}
               <div className="space-y-4">
                 <h3 className="text-indigo-900 font-black text-sm sm:text-lg uppercase tracking-widest border-b-2 border-indigo-100 pb-2">
-                  Regras Rápidas
+                  {t.quickRules}
                 </h3>
                 <ul className="space-y-3">
                   <li className="flex gap-3 text-xs sm:text-sm text-gray-600 font-medium">
                     <span className="text-indigo-600 font-black">1.</span>
-                    Cada <span className="text-gray-900 font-bold">Vila</span> vale 1 ponto. <span className="text-gray-900 font-bold">Cidades</span> valem 2 pontos.
+                    {t.rule1}
                   </li>
                   <li className="flex gap-3 text-xs sm:text-sm text-gray-600 font-medium">
                     <span className="text-indigo-600 font-black">2.</span>
-                    Cidades produzem o <span className="text-indigo-600 font-bold">DOBRO</span> de recursos.
+                    {t.rule2}
                   </li>
                   <li className="flex gap-3 text-xs sm:text-sm text-gray-600 font-medium">
                     <span className="text-indigo-600 font-black">3.</span>
-                    Vença ao atingir <span className="text-indigo-600 font-bold">10 pontos</span>.
+                    {t.rule3}
                   </li>
                 </ul>
               </div>
@@ -1487,7 +1708,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                 onClick={() => setShowRulesModal(false)}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-3 rounded-2xl font-black shadow-lg transition-all transform hover:scale-105"
               >
-                ENTENDI!
+                {t.gotIt}
               </button>
             </div>
           </div>
@@ -1498,17 +1719,17 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
           <div className="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full border-4" style={{ borderColor: PLAYERS[winner].color }}>
             <div className="text-6xl mb-4">🏆</div>
             <h2 className="text-3xl font-black mb-2 tracking-tighter" style={{ color: PLAYERS[winner].color }}>
-              VENCEDOR!
+              {t.winner}
             </h2>
             <p className="text-gray-600 font-bold text-lg mb-6">
-              {PLAYERS[winner].name} conquistou Catan!
+              {gameState.players[winner]?.name} {t.conqueredCatan}
             </p>
             <button
               onClick={() => window.location.reload()}
               className="w-full py-3 rounded-xl font-bold text-white transition-all transform hover:scale-105"
               style={{ backgroundColor: PLAYERS[winner].color }}
             >
-              Jogar Novamente
+              {t.playAgain}
             </button>
           </div>
         </div>
@@ -1517,7 +1738,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50">
           <div className="bg-gray-700 p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto relative">
             <div className="flex justify-between items-center mb-4 sticky top-0 bg-gray-700 py-2 z-10 border-b border-gray-600">
-              <h2 className="text-2xl font-bold text-white">Ajuste de Posição</h2>
+              <h2 className="text-2xl font-bold text-white">{t.adjustPosition}</h2>
               <button
                 onClick={() => setShowAdjustModal(false)}
                 className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
@@ -1531,7 +1752,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                 onClick={generateJSON}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors"
               >
-                📋 Copiar JSON
+                📋 {t.copyJson}
               </button>
               <button
                 onClick={() => {
@@ -1540,7 +1761,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                 }}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors"
               >
-                📥 Carregar
+                📥 {t.load}
               </button>
             </div>
 
@@ -1549,7 +1770,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                 <div key={hex.id} className="bg-gray-800 p-4 rounded">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-white font-bold">
-                      Hexágono {idx + 1} - {RESOURCES[hex.resource].name} {hex.number > 0 && `(${hex.number})`}
+                      {t.hexagon} {idx + 1} - {t[RESOURCES[hex.resource].translationKey]} {hex.number > 0 && `(${hex.number})`}
                     </div>
                     <div 
                       className="w-8 h-8 rounded"
@@ -1558,7 +1779,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                   </div>
                   
                   <div className="text-white text-sm mb-2">
-                    Posição: X: {Math.round(hex.x)}, Y: {Math.round(hex.y)}
+                    {t.position}: X: {Math.round(hex.x)}, Y: {Math.round(hex.y)}
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2">
@@ -1631,28 +1852,28 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tighter italic">CATAN</h1>
           <div className="flex gap-2 sm:gap-4 items-center flex-wrap justify-center">
             <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
-              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">Fase:</span>
-              <span className="text-white text-xs sm:text-base font-bold">{gameState.gamePhase === 'setup' ? 'Configuração' : 'Em Jogo'}</span>
+              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">{t.phase}:</span>
+              <span className="text-white text-xs sm:text-base font-bold">{gameState.gamePhase === 'setup' ? t.setup : t.playing}</span>
             </div>
             
             <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
-              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">Turno:</span>
+              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">{t.turn}:</span>
               <span className="font-black text-xs sm:text-base" style={{ color: PLAYERS[gameState.currentTurn].color }}>
-                {PLAYERS[gameState.currentTurn].name}
+                {gameState.players[gameState.currentTurn]?.name}
               </span>
             </div>
 
             {myPlayerId && (
               <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
-                <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">Você:</span>
+                <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">{t.you}:</span>
                 <span className="font-black text-xs sm:text-base" style={{ color: PLAYERS[myPlayerId].color }}>
-                  {PLAYERS[myPlayerId].name}
+                  {gameState.players[myPlayerId]?.name}
                 </span>
               </div>
             )}
 
             <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10 flex items-center gap-2">
-              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold">Pontos:</span>
+              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold">{t.points}:</span>
               <div className="flex gap-1.5">
                 {Array.from({ length: gameState.playerCount }, (_, i) => i + 1).map(p => (
                   <div key={p} className="flex items-center gap-1">
@@ -1675,7 +1896,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                   }`}
                 >
                   <Dices size={18} />
-                  {gameState.dice[0] === 0 ? 'Dados' : 'Lançados'}
+                  {gameState.dice[0] === 0 ? t.dice : t.rolled}
                 </button>
                 
                 <button
@@ -1696,15 +1917,24 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  Passar Turno
+                  {t.passTurn}
                 </button>
               </div>
             )}
 
             {gameState.dice[0] > 0 && (
-              <div className="bg-white text-indigo-900 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-black text-base sm:text-xl shadow-inner flex items-center gap-2 mt-2 md:mt-0">
-                <span>🎲</span>
-                <span>{gameState.dice[0] + gameState.dice[1]}</span>
+              <div className="flex items-center gap-2 mt-2 md:mt-0">
+                <div className="flex gap-1.5">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl shadow-inner flex items-center justify-center text-indigo-900 font-black text-xl sm:text-2xl border-b-4 border-gray-200">
+                    {gameState.dice[0]}
+                  </div>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl shadow-inner flex items-center justify-center text-indigo-900 font-black text-xl sm:text-2xl border-b-4 border-gray-200">
+                    {gameState.dice[1]}
+                  </div>
+                </div>
+                <div className="bg-indigo-600 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-black text-xl sm:text-2xl shadow-lg border border-white/20">
+                  {gameState.dice[0] + gameState.dice[1]}
+                </div>
               </div>
             )}
           </div>
@@ -1720,8 +1950,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               } ${ (gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
             >
               <Home size={20} />
-              <span className="hidden sm:inline">Vila</span>
-              <span className="sm:hidden">Vila</span>
+              <span>{t.settlement}</span>
             </button>
             <button
               onClick={() => gameState.gamePhase === 'playing' && (debugMode || myPlayerId === gameState.currentTurn) && setMode('road')}
@@ -1733,8 +1962,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 <path d="M6 12h12M12 6v12"/>
               </svg>
-              <span className="hidden sm:inline">Estrada</span>
-              <span className="sm:hidden">Estr.</span>
+              <span>{t.road}</span>
             </button>
             <button
               onClick={() => gameState.gamePhase === 'playing' && (debugMode || myPlayerId === gameState.currentTurn) && setMode('city')}
@@ -1744,14 +1972,13 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               } ${ (gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
             >
               <Building size={20} />
-              <span className="hidden sm:inline">Cidade</span>
-              <span className="sm:hidden">Cid.</span>
+              <span>{t.city}</span>
             </button>
           </div>
 
           <div className="flex flex-col gap-2 w-full lg:w-auto">
             <div className="flex justify-between items-center px-1">
-              <span className="text-white/50 text-[10px] font-bold uppercase tracking-wider">Recursos</span>
+              <span className="text-white/50 text-[10px] font-bold uppercase tracking-wider">{t.resources}</span>
               <span className="bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border border-amber-500/30">
                 {playerVPs[gameState.currentTurn]} VP
               </span>
@@ -1762,7 +1989,7 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
                   <div className="text-lg">{RESOURCES[res]?.icon}</div>
                   <div className="flex flex-col">
                     <span className="text-white font-black text-base leading-none">{count}</span>
-                    <span className="text-white/40 text-[8px] uppercase font-bold tracking-tighter">{RESOURCES[res]?.name.substring(0, 3)}</span>
+                    <span className="text-white/40 text-[8px] uppercase font-bold tracking-tighter">{t[RESOURCES[res]?.translationKey].substring(0, 3)}</span>
                   </div>
                 </div>
               ))}
@@ -1787,14 +2014,14 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
             {isInitialLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1a4a6e]/80 rounded-2xl z-20 backdrop-blur-sm">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-white font-black text-lg sm:text-xl animate-pulse uppercase tracking-widest text-center px-4">Carregando Tabuleiro...</p>
-                <p className="text-white/60 text-[10px] sm:text-sm mt-2 font-bold uppercase tracking-tighter">Prepare sua estratégia!</p>
+                <p className="text-white font-black text-lg sm:text-xl animate-pulse uppercase tracking-widest text-center px-4">{t.loadingBoard}</p>
+                <p className="text-white/60 text-[10px] sm:text-sm mt-2 font-bold uppercase tracking-tighter">{t.prepareStrategy}</p>
               </div>
             )}
 
             {!isInitialLoading && gameState.gamePhase === 'setup' && (
               <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-950 px-4 py-2 sm:px-8 sm:py-3 rounded-full font-black shadow-2xl animate-bounce pointer-events-none whitespace-nowrap z-10 text-xs sm:text-base">
-                {gameState.setupSubPhase === 'settlement' ? 'Escolha sua VILA inicial' : 'Agora construa a ESTRADA adjacente'}
+                {gameState.setupSubPhase === 'settlement' ? t.chooseInitialSettlement : t.chooseInitialRoad}
               </div>
             )}
           </div>
@@ -1814,46 +2041,46 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
           title={audioEnabled ? 'Desativar Sons' : 'Ativar Sons'}
         >
           {audioEnabled ? <Volume2 size={14} className="sm:w-4 sm:h-4" /> : <VolumeX size={14} className="sm:w-4 sm:h-4" />}
-          {audioEnabled ? 'Som Ativo' : 'Mudo'}
+          {audioEnabled ? t.soundActive : t.mute}
         </button>
         <button
           onClick={() => setShowRulesModal(true)}
           className="bg-indigo-600/80 hover:bg-indigo-600 text-white px-4 py-2 sm:px-6 sm:py-2 rounded-full text-[10px] sm:text-sm transition-all flex items-center gap-2 border border-indigo-400/30 shadow-lg"
         >
-          <HelpCircle size={14} className="sm:w-4 sm:h-4" /> Regras
+          <HelpCircle size={14} className="sm:w-4 sm:h-4" /> {t.rules}
         </button>
         <button
           onClick={() => setShowAdjustModal(true)}
           className="bg-white/5 hover:bg-white/10 text-white/70 px-4 py-2 sm:px-6 sm:py-2 rounded-full text-[10px] sm:text-sm transition-all flex items-center gap-2 border border-white/5"
         >
-          ⚙️ Ajustes
+          ⚙️ {t.adjusts}
         </button>
         <button
           onClick={() => setDebugMode(!debugMode)}
           className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full text-[10px] sm:text-sm transition-all flex items-center gap-2 border ${debugMode ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'bg-white/5 text-white/70 border-white/5'}`}
         >
-          🔍 Debug
+          🔍 {t.debug}
         </button>
         <button
           onClick={() => setShowVertexNumbers(!showVertexNumbers)}
           className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full text-[10px] sm:text-sm transition-all flex items-center gap-2 border ${showVertexNumbers ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'bg-white/5 text-white/70 border-white/5'}`}
         >
-          🔢 Números
+          🔢 {t.numbers}
         </button>
       </div>
 
       <div className="mt-4 text-white text-sm">
-        <p>• Modo Vila: Clique nos vértices para construir vilas</p>
-        <p>• Modo Estrada: Clique em uma vila sua, depois clique na aresta para construir estrada</p>
-        <p>• Modo Cidade: Clique em uma vila sua para transformá-la em cidade</p>
-        {selectedSettlement && <p className="text-yellow-400">• Vila selecionada! Clique em uma aresta conectada para construir estrada</p>}
+        <p>• {t.modeSettlement}</p>
+        <p>• {t.modeRoad}</p>
+        <p>• {t.modeCity}</p>
+        {selectedSettlement && <p className="text-yellow-400">• {t.settlementSelected}</p>}
       </div>
 
       {debugMode && (
         <div className="mt-4 w-full max-w-6xl bg-gray-700/80 border border-yellow-400 text-white px-4 py-3 rounded">
-          <p className="text-sm font-semibold text-yellow-100">Debug - estradas conectadas por vila</p>
+          <p className="text-sm font-semibold text-yellow-100">{t.debugRoadsPerSettlement}</p>
           {gameState.board.settlements.size === 0 ? (
-            <p className="text-xs text-gray-300 mt-2">Nenhuma vila construída ainda.</p>
+            <p className="text-xs text-gray-300 mt-2">{t.noSettlementsBuiltYet}</p>
           ) : (
             Array.from(gameState.board.settlements.entries()).map(([vertexId, settlement]: [string, Ownership]) => {
               const vertex = gameState.board.vertices.find(v => v.id === vertexId);
@@ -1871,14 +2098,14 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
               return (
                 <div key={vertexId} className="mt-3">
                   <div className="text-sm font-medium">
-                    Vila {vertex ? `V${vertex.position}` : vertexId} ({PLAYERS[settlement.player]?.name ?? `Jogador ${settlement.player}`})
+                    {t.settlement} {vertex ? `V${vertex.position}` : vertexId} ({gameState.players[settlement.player]?.name ?? `${t.player} ${settlement.player}`})
                   </div>
                   {uniqueNeighbors.length > 0 ? (
                     <div className="text-xs text-gray-200">
-                      Estradas disponíveis ({uniqueNeighbors.length}/3): {uniqueNeighbors.map(pos => `V${pos}`).join(', ')}
+                      {t.availableRoads} ({uniqueNeighbors.length}/3): {uniqueNeighbors.map(pos => `V${pos}`).join(', ')}
                     </div>
                   ) : (
-                    <div className="text-xs text-yellow-300">Nenhuma estrada conectada encontrada</div>
+                    <div className="text-xs text-yellow-300">{t.noConnectedRoadsFound}</div>
                   )}
                 </div>
               );
@@ -1906,10 +2133,10 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.412-4.041-1.412-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
             </svg>
-            Contribuir no GitHub
+            {t.contributeGithub}
           </a>
         </div>
-        <p>© 2026 Open Catan - Desenvolvido para a comunidade</p>
+        <p>{t.developedForCommunity}</p>
       </div>
     </div>
   );

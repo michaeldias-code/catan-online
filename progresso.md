@@ -10,7 +10,7 @@ Status atual das funcionalidades do jogo e roteiro para versão multiplayer onli
 - [x] **Infraestrutura e Backend**:
     - [x] **Supabase Realtime**: Sincronização automática do estado do jogo entre múltiplos jogadores.
     - [x] **Gerenciamento de Salas**: Sistema de lobby com códigos de sala (ex: SALA1) para conectar jogadores.
-    - [x] **Segurança e Configuração**: Proteção de credenciais via variáveis de ambiente (`.env.local`).
+    - [x] **Segurança e Configuração**: Proteção de credenciais via variáveis de ambiente (`.env.local`) com fallback seguro para evitar quebras de carregamento.
 - [x] **Sincronização do Estado do Jogo**:
     - [x] **Persistência no Banco de Dados**: Estado do jogo salvo em tempo real no Supabase.
     - [x] **Realtime Updates**: Atualização instantânea da interface ao receber mudanças remotas.

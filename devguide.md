@@ -47,6 +47,7 @@ O projeto agora utiliza variáveis de ambiente para proteger as chaves do Supaba
 - O arquivo `lib/supabase.ts` não contém mais chaves "hardcoded".
 - As chaves devem ser configuradas no arquivo `.env.local` (que está no `.gitignore`).
 - Variáveis necessárias: `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- **Resiliência**: O sistema agora trata a ausência de variáveis de ambiente com avisos no console e placeholders, permitindo que a interface carregue mesmo sem conexão com o banco.
 
 ### Deploy e Links
 - **Deploy**: Realizado via Vercel com CI/CD automático.
