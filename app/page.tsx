@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Dices, Home, Building, Info, HelpCircle, Volume2, VolumeX, LogIn } from 'lucide-react';
+import { Dices, Home, Building, Info, HelpCircle, Volume2, VolumeX, LogIn, Send, MessageCircle, X, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 type Language = 'pt' | 'en';
@@ -69,6 +69,8 @@ const TRANSLATIONS = {
     availableRoads: 'Estradas disponíveis',
     noConnectedRoadsFound: 'Nenhuma estrada conectada encontrada',
     noSettlementsBuiltYet: 'Nenhuma vila construída ainda.',
+    chat: 'Chat',
+    typeMessage: 'Digite sua mensagem...',
     debugRoadsPerSettlement: 'Debug - estradas conectadas por vila',
     modeSettlement: 'Modo Vila: Clique nos vértices para construir vilas',
     modeRoad: 'Modo Estrada: Clique em uma vila sua, depois clique na aresta para construir estrada',
@@ -147,6 +149,8 @@ const TRANSLATIONS = {
     debug: 'Debug',
     numbers: 'Numbers',
     player: 'Player',
+    chat: 'Chat',
+    typeMessage: 'Type a message...',
     availableRoads: 'Available roads',
     noConnectedRoadsFound: 'No connected roads found',
     noSettlementsBuiltYet: 'No settlements built yet.',
@@ -311,6 +315,14 @@ const BUILDING_COSTS: Record<string, Record<string, number>> = {
   city: { wheat: 2, ore: 3 }
 };
 
+type ChatMessage = {
+  id: string;
+  senderId: number;
+  senderName: string;
+  text: string;
+  timestamp: string;
+};
+
 type GameState = {
   players: Record<number, {
     color: string;
@@ -331,6 +343,7 @@ type GameState = {
   setupTurn: number;
   setupSubPhase: 'settlement' | 'road';
   playerCount: number;
+  messages?: ChatMessage[];
 };
 
 export default function CatanGame() {
@@ -353,6 +366,9 @@ export default function CatanGame() {
   const [allowedEdges, setAllowedEdges] = useState<string[]>([]);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [chatMessage, setChatMessage] = useState('');
+  const [showChat, setShowChat] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
   
   const sessionId = useMemo(() => Math.random().toString(36).substring(7), []);
@@ -384,7 +400,8 @@ export default function CatanGame() {
       dice: [0, 0],
       setupTurn: 0,
       setupSubPhase: 'settlement',
-      playerCount: 4
+      playerCount: 4,
+      messages: []
     };
   });
 
@@ -415,7 +432,8 @@ export default function CatanGame() {
           settlements: new Map<string, Ownership>(board.settlements || []),
           roads: new Map<string, Ownership>(board.roads || []),
           cities: new Map<string, Ownership>(board.cities || []),
-        }
+        },
+        messages: data.messages || []
       };
     } catch (e) {
       console.error('Erro ao deserializar estado:', e);
@@ -445,6 +463,30 @@ export default function CatanGame() {
       return next;
     });
   }, [updateRemoteState]);
+
+  const sendMessage = useCallback(() => {
+    if (!chatMessage.trim() || !myPlayerId) return;
+    
+    const newMessage: ChatMessage = {
+      id: Math.random().toString(36).substring(7),
+      senderId: myPlayerId,
+      senderName: gameState.players[myPlayerId]?.name || `Player ${myPlayerId}`,
+      text: chatMessage.trim(),
+      timestamp: new Date().toISOString()
+    };
+
+    setGameState(prev => ({
+      ...prev,
+      messages: [...(prev.messages || []), newMessage]
+    }));
+    setChatMessage('');
+  }, [chatMessage, myPlayerId, gameState.players, setGameState]);
+
+  useEffect(() => {
+    if (showChat && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [gameState.messages, showChat]);
 
   const joinRoom = useCallback(async () => {
     if (!roomCode.trim() || isLoading) return;
@@ -1582,6 +1624,19 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
             >
               {t.debugMode}: {debugMode ? t.activated : t.desactivated}
             </button>
+
+            <button
+              onClick={() => setShowChat(true)}
+              className="w-full py-3 rounded-xl bg-black/40 text-white/60 text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-white/10 hover:bg-black/60 flex items-center justify-center gap-2 relative"
+            >
+              <MessageCircle size={14} />
+              {t.chat}
+              {gameState.messages && gameState.messages.length > 0 && !showChat && (
+                <span className="absolute top-2 right-4 bg-red-500 text-white text-[8px] px-1.5 rounded-full font-bold animate-pulse">
+                  {gameState.messages.length}
+                </span>
+              )}
+            </button>
           </div>
           
           <p className="mt-8 text-white/10 text-[9px] font-bold uppercase tracking-[0.3em] leading-relaxed">
@@ -2136,8 +2191,92 @@ const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
             {t.contributeGithub}
           </a>
         </div>
-        <p>{t.developedForCommunity}</p>
+      <p>{t.developedForCommunity}</p>
       </div>
+
+      {/* Floating Chat Button */}
+      {!showChat && (
+        <button
+          onClick={() => setShowChat(true)}
+          className="fixed bottom-6 right-6 z-[90] bg-amber-500 hover:bg-amber-600 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 border-4 border-white/20 group overflow-visible"
+        >
+          <MessageCircle size={28} />
+          {gameState.messages && gameState.messages.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] min-w-[20px] h-5 px-1.5 rounded-full font-black flex items-center justify-center border-2 border-white shadow-lg">
+              {gameState.messages.length}
+            </span>
+          )}
+          <span className="absolute right-16 bg-gray-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none uppercase tracking-widest font-bold border border-white/10">
+            {t.chat}
+          </span>
+        </button>
+      )}
+
+      {/* Chat Overlay */}
+      {showChat && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-end p-0 sm:p-6 pointer-events-none">
+          <div className="w-full sm:w-96 h-[70vh] sm:h-[600px] bg-gray-900 border-t sm:border border-white/10 sm:rounded-2xl shadow-2xl flex flex-col pointer-events-auto animate-in slide-in-from-bottom sm:slide-in-from-right duration-300">
+            {/* Header */}
+            <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/20">
+              <div className="flex items-center gap-2">
+                <MessageCircle size={18} className="text-amber-500" />
+                <h3 className="text-white font-bold uppercase tracking-widest text-xs">{t.chat}</h3>
+              </div>
+              <button onClick={() => setShowChat(false)} className="text-gray-400 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
+              {gameState.messages?.map((msg) => (
+                <div key={msg.id} className={`flex flex-col ${msg.senderId === myPlayerId ? 'items-end' : 'items-start'}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-tighter" style={{ color: PLAYERS[msg.senderId]?.color }}>
+                      {msg.senderName}
+                    </span>
+                    <span className="text-[8px] text-gray-500">
+                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <div className={`px-3 py-2 rounded-2xl text-sm max-w-[85%] break-words ${
+                    msg.senderId === myPlayerId ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white/5 text-gray-200 rounded-tl-none'
+                  }`}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="p-4 border-t border-white/10 bg-black/20">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  sendMessage();
+                }}
+                className="flex gap-2"
+              >
+                <input 
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder={t.typeMessage}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50 transition-colors"
+                />
+                <button 
+                  type="submit"
+                  disabled={!chatMessage.trim()}
+                  className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white p-2 rounded-xl transition-all shadow-lg"
+                >
+                  <Send size={18} />
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
