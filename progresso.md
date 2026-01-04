@@ -79,3 +79,4 @@ Status atual das funcionalidades do jogo e roteiro para versão multiplayer onli
 - [ ] **Corrigir bug players**: Resolver problemas na atribuição e troca de IDs de jogadores.
 - [ ] **Criar novos tabuleiros**: Implementar layouts alternativos de recursos e números.
 - [x] **Colocar disclaimer**: Adicionar aviso legal sobre a natureza do projeto e uso de recursos.
+- [ ] **Melhorar visualização de recursos**: Visão geral versus visual de recursos individuais.

@@ -61,6 +61,8 @@ const TRANSLATIONS = {
     chooseInitialRoad: 'Agora construa a ESTRADA adjacente',
     soundActive: 'Som Ativo',
     mute: 'Mudo',
+    time: 'Tempo',
+    yourTurn: 'Seu Turno!',
     rules: 'Regras',
     adjusts: 'Ajustes',
     debug: 'Debug',
@@ -147,6 +149,8 @@ const TRANSLATIONS = {
     resources: 'Resources',
     loadingBoard: 'Loading Board...',
     prepareStrategy: 'Prepare your strategy!',
+    time: 'Time',
+    yourTurn: 'Your Turn!',
     chooseInitialSettlement: 'Choose your starting SETTLEMENT',
     chooseInitialRoad: 'Now build the adjacent ROAD',
     soundActive: 'Sound On',
@@ -215,6 +219,7 @@ type Edge = {
 type Ownership = { player: number };
 
 const VERTEX_MERGE_DISTANCE = 5;
+const TURN_TIME_LIMIT = 60; // segundos
 
 const buildGraphFromHexagons = (hexagons: Hexagon[]) => {
   const vertices: Vertex[] = [];
@@ -314,6 +319,7 @@ const SOUNDS: Record<string, string> = {
   dice: 'https://assets.mixkit.co/active_storage/sfx/1017/1017-preview.mp3',
   nextTurn: 'https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3',
   victory: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3',
+  yourTurn: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
   road: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
   city: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'
 };
@@ -347,6 +353,7 @@ type GameState = {
     cities: Map<string, Ownership>;
   };
   currentTurn: number;
+  turnStartTime: number;
   gamePhase: 'lobby' | 'setup' | 'playing';
   dice: [number, number];
   setupTurn: number;
@@ -367,16 +374,10 @@ type SerializedGameState = Omit<GameState, 'board'> & {
 export default function CatanGame() {
   // 1. States and Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [language, setLanguage] = useState<Language>('pt');
-  const t = TRANSLATIONS[language];
-  const resourceTranslations = t as unknown as Record<string, string>;
-  const getResourceName = (res: string) => {
-    const key = RESOURCES[res]?.translationKey;
-    if (!key) return res;
-    const translation = (t as any)[key];
-    return typeof translation === 'string' ? translation : res;
-  };
+  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const [language, setLanguage] = useState<Language>('pt');
   const [roomCode, setRoomCode] = useState('');
   const [entryMode, setEntryMode] = useState<'choice' | 'open' | 'closed'>('choice');
   const [isJoined, setIsJoined] = useState(false);
@@ -393,11 +394,20 @@ export default function CatanGame() {
   const [hoveredPosition, setHoveredPosition] = useState<{ type: 'vertex' | 'edge'; id: string } | null>(null);
   const [selectedSettlement, setSelectedSettlement] = useState<string | null>(null);
   const [allowedEdges, setAllowedEdges] = useState<string[]>([]);
+  const [timeLeft, setTimeLeft] = useState(TURN_TIME_LIMIT);
+  const [showTurnNotification, setShowTurnNotification] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
   const [showChat, setShowChat] = useState(false);
 
-  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  // 2. Computed Values
+  const t = useMemo(() => TRANSLATIONS[language], [language]);
+  
+  const getResourceName = useCallback((res: string) => {
+    const key = RESOURCES[res]?.translationKey;
+    if (!key) return res;
+    const translation = (t as any)[key];
+    return typeof translation === 'string' ? translation : res;
+  }, [t]);
 
   const sessionId = useMemo(() => {
     if (typeof window === 'undefined') return Math.random().toString(36).substring(7);
@@ -431,6 +441,7 @@ export default function CatanGame() {
         cities: new Map(),
       },
       currentTurn: 1,
+      turnStartTime: Date.now(),
       gamePhase: 'lobby',
       dice: [0, 0],
       setupTurn: 0,
@@ -441,8 +452,8 @@ export default function CatanGame() {
     };
   });
 
-  // 2. Helper functions (Internal to CatanGame, but defined before use)
-  const serializeGameState = (state: GameState): SerializedGameState => {
+  // 3. Helper Functions
+  const serializeGameState = useCallback((state: GameState): SerializedGameState => {
     return {
       ...state,
       board: {
@@ -452,7 +463,7 @@ export default function CatanGame() {
         cities: Array.from(state.board.cities.entries()),
       }
     };
-  };
+  }, []);
 
   const deserializeGameState = useCallback((data: SerializedGameState): GameState | null => {
     if (!data) return null;
@@ -492,7 +503,7 @@ export default function CatanGame() {
       console.error('Erro ao salvar estado:', error);
       throw error;
     }
-  }, [roomCode]);
+  }, [roomCode, serializeGameState]);
 
   const setGameState = useCallback((update: GameState | ((prev: GameState) => GameState)) => {
     setGameStateInternal(prev => {
@@ -640,7 +651,7 @@ export default function CatanGame() {
     return { reachable, passable };
   }, [gameState.board.edges, gameState.board.roads, gameState.board.settlements, gameState.board.cities, gameState.currentTurn]);
 
-  const initialized = gameState.board.hexagons.length > 0;
+  const initialized = useMemo(() => gameState.board.hexagons.length > 0, [gameState.board.hexagons]);
 
   const canPlaceSettlement = useCallback((vertexId: string) => {
     if (!initialized || !vertexId) return false;
@@ -772,6 +783,7 @@ export default function CatanGame() {
           cities: new Map(),
         },
         currentTurn: 1,
+        turnStartTime: Date.now(),
         gamePhase: 'lobby',
         dice: [0, 0],
         setupTurn: 0,
@@ -815,6 +827,7 @@ export default function CatanGame() {
         playerCount: numPlayers,
         gamePhase: 'setup',
         currentTurn: 1,
+        turnStartTime: Date.now(),
         setupTurn: 0,
       };
     });
@@ -878,6 +891,38 @@ export default function CatanGame() {
   }, [playerVPs]);
 
   // 3. Effects
+  useEffect(() => {
+    if (gameState.gamePhase !== 'playing') return;
+    
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - gameState.turnStartTime) / 1000);
+      const remaining = Math.max(0, TURN_TIME_LIMIT - elapsed);
+      setTimeLeft(remaining);
+      
+      // Passa o turno automaticamente se o tempo acabar
+      if (remaining === 0 && (debugMode || myPlayerId === gameState.currentTurn)) {
+        playSound('nextTurn');
+        setGameState(prev => ({
+          ...prev,
+          dice: [0, 0],
+          currentTurn: (prev.currentTurn % prev.playerCount) + 1,
+          turnStartTime: Date.now()
+        }));
+        setSelectedSettlement(null);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [gameState.turnStartTime, gameState.gamePhase, gameState.currentTurn, gameState.playerCount, myPlayerId, debugMode]);
+
+  useEffect(() => {
+    if (gameState.gamePhase === 'playing' && gameState.currentTurn === myPlayerId) {
+      setShowTurnNotification(true);
+      const timer = setTimeout(() => setShowTurnNotification(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.currentTurn, myPlayerId, gameState.gamePhase]);
+
   useEffect(() => {
     const savedRoom = localStorage.getItem('catan_room_code');
     if (savedRoom && !isJoined && !isLoading) {
@@ -1257,10 +1302,12 @@ export default function CatanGame() {
                 newState.setupTurn = prev.setupTurn + 1;
                 newState.setupSubPhase = 'settlement';
                 newState.currentTurn = setupOrder[newState.setupTurn];
+                newState.turnStartTime = Date.now();
               } else {
                 newState.gamePhase = 'playing';
                 newState.setupSubPhase = 'settlement';
                 newState.currentTurn = 1;
+                newState.turnStartTime = Date.now();
               }
             }
             return newState;
@@ -1443,6 +1490,17 @@ export default function CatanGame() {
 
   return (
     <div className="w-full min-h-screen bg-[#1a4a6e] flex flex-col items-center p-4 overflow-x-hidden relative">
+      {showTurnNotification && (
+        <div className="fixed top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-none">
+          <div className="bg-amber-500 text-black px-8 py-4 rounded-3xl shadow-2xl border-4 border-black/10 animate-bounce flex items-center gap-4">
+            <Info size={32} />
+            <div className="flex flex-col">
+              <span className="text-2xl font-black tracking-tighter uppercase leading-none">{t.yourTurn}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">{t.prepareStrategy}</span>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="fixed top-4 right-4 z-[90] flex flex-col items-end gap-2">
         <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-2xl">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -1558,9 +1616,19 @@ export default function CatanGame() {
               <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">{t.phase}:</span>
               <span className="text-white text-xs sm:text-base font-bold">{gameState.gamePhase === 'setup' ? t.setup : t.playing}</span>
             </div>
-            <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
-              <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold mr-2">{t.turn}:</span>
-              <span className="font-black text-xs sm:text-base" style={{ color: PLAYERS[gameState.currentTurn]?.color }}>{gameState.players[gameState.currentTurn]?.name}</span>
+            <div className={`bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border transition-all ${gameState.gamePhase === 'playing' && timeLeft <= 10 ? 'border-red-500/50 animate-pulse' : 'border-white/10'}`}>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-300 text-[10px] sm:text-xs uppercase font-bold">{t.turn}:</span>
+                <span className="font-black text-xs sm:text-base" style={{ color: PLAYERS[gameState.currentTurn]?.color }}>{gameState.players[gameState.currentTurn]?.name}</span>
+                {gameState.gamePhase === 'playing' && (
+                  <div className="flex items-center gap-1 ml-2 border-l border-white/10 pl-2">
+                    <span className="text-gray-400 text-[8px] uppercase font-bold">{t.time}:</span>
+                    <span className={`font-black text-xs sm:text-sm ${timeLeft <= 10 ? 'text-red-500' : 'text-amber-500'}`}>
+                      {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
             {myPlayerId && (
               <div className="bg-black/30 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10">
@@ -1584,7 +1652,7 @@ export default function CatanGame() {
                 <button onClick={rollDice} disabled={gameState.dice[0] > 0 || (!debugMode && myPlayerId !== gameState.currentTurn)} className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full flex items-center gap-2 transition-all shadow-lg font-bold text-sm sm:text-base ${(gameState.dice[0] === 0 && (debugMode || myPlayerId === gameState.currentTurn)) ? 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:scale-105' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}>
                   <Dices size={18} />{gameState.dice[0] === 0 ? t.dice : t.rolled}
                 </button>
-                <button onClick={() => { if (!debugMode && myPlayerId !== gameState.currentTurn) return; playSound('nextTurn'); setGameState(prev => ({ ...prev, dice: [0, 0], currentTurn: (prev.currentTurn % prev.playerCount) + 1 })); setSelectedSettlement(null); }} disabled={gameState.dice[0] === 0 || (!debugMode && myPlayerId !== gameState.currentTurn)} className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full flex items-center gap-2 transition-all shadow-lg font-bold text-sm sm:text-base ${(gameState.dice[0] > 0 && (debugMode || myPlayerId === gameState.currentTurn)) ? 'bg-emerald-600 hover:bg-emerald-700 text-white transform hover:scale-105' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}>
+                <button onClick={() => { if (!debugMode && myPlayerId !== gameState.currentTurn) return; playSound('nextTurn'); setGameState(prev => ({ ...prev, dice: [0, 0], currentTurn: (prev.currentTurn % prev.playerCount) + 1, turnStartTime: Date.now() })); setSelectedSettlement(null); }} disabled={gameState.dice[0] === 0 || (!debugMode && myPlayerId !== gameState.currentTurn)} className={`px-4 py-2 sm:px-6 sm:py-2 rounded-full flex items-center gap-2 transition-all shadow-lg font-bold text-sm sm:text-base ${(gameState.dice[0] > 0 && (debugMode || myPlayerId === gameState.currentTurn)) ? 'bg-emerald-600 hover:bg-emerald-700 text-white transform hover:scale-105' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}>
                   {t.passTurn}
                 </button>
               </div>
@@ -1602,8 +1670,17 @@ export default function CatanGame() {
         </div>
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-center lg:items-end justify-between">
           <div className="flex gap-2 sm:gap-3 justify-center w-full lg:w-auto">
-            {[ { mode: 'settlement', icon: <Home size={20} />, label: t.settlement }, { mode: 'road', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M6 12h12M12 6v12"/></svg>, label: t.road }, { mode: 'city', icon: <Building size={20} />, label: t.city } ].map(item => (
-              <button key={item.mode} onClick={() => gameState.gamePhase === 'playing' && (debugMode || myPlayerId === gameState.currentTurn) && setMode(item.mode as any)} disabled={gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)} className={`flex-1 sm:flex-none px-4 py-3 sm:px-6 sm:py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all text-sm sm:text-base ${mode === item.mode ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 grayscale'} ${(gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}>
+            {[
+              { mode: 'settlement', icon: <Home size={20} />, label: t.settlement },
+              { mode: 'road', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M6 12h12M12 6v12"/></svg>, label: t.road },
+              { mode: 'city', icon: <Building size={20} />, label: t.city }
+            ].map(item => (
+              <button 
+                key={item.mode} 
+                onClick={() => gameState.gamePhase === 'playing' && (debugMode || myPlayerId === gameState.currentTurn) && setMode(item.mode as any)} 
+                disabled={gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)} 
+                className={`flex-1 sm:flex-none px-4 py-3 sm:px-6 sm:py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all text-sm sm:text-base ${mode === item.mode ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/5 text-gray-400 grayscale'} ${(gameState.gamePhase === 'setup' || (!debugMode && myPlayerId !== gameState.currentTurn) || (gameState.gamePhase === 'playing' && gameState.dice[0] === 0)) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'}`}
+              >
                 {item.icon}<span>{item.label}</span>
               </button>
             ))}
