@@ -71,11 +71,11 @@ Status atual das funcionalidades do jogo e roteiro para versão multiplayer onli
 - [ ] **Bônus Especiais**: Maior Estrada e Maior Exército.
 
 ### 4. Melhorias de UX Online
-- [ ] **Chat**: Sistema de mensagens entre os jogadores na sala.
+- [x] **Chat**: Sistema de mensagens entre os jogadores na sala.
 - [ ] **Indicador de Turno**: Notificações e timers para o jogador da vez.
-- [ ] **Reconexão**: Capacidade de voltar ao jogo em caso de queda de internet.
+- [x] **Reconexão**: Capacidade de voltar ao jogo em caso de queda de internet.
 
 ### 5. Ajustes e Finalização
 - [ ] **Corrigir bug players**: Resolver problemas na atribuição e troca de IDs de jogadores.
 - [ ] **Criar novos tabuleiros**: Implementar layouts alternativos de recursos e números.
-- [ ] **Colocar disclaimer**: Adicionar aviso legal sobre a natureza do projeto e uso de recursos.
+- [x] **Colocar disclaimer**: Adicionar aviso legal sobre a natureza do projeto e uso de recursos.

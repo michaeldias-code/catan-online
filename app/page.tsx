@@ -369,6 +369,13 @@ export default function CatanGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [language, setLanguage] = useState<Language>('pt');
   const t = TRANSLATIONS[language];
+  const resourceTranslations = t as unknown as Record<string, string>;
+  const getResourceName = (res: string) => {
+    const key = RESOURCES[res]?.translationKey;
+    if (!key) return res;
+    const translation = (t as any)[key];
+    return typeof translation === 'string' ? translation : res;
+  };
 
   const [roomCode, setRoomCode] = useState('');
   const [entryMode, setEntryMode] = useState<'choice' | 'open' | 'closed'>('choice');
@@ -1528,7 +1535,7 @@ export default function CatanGame() {
               {gameState.board.hexagons.map((hex, idx) => (
                 <div key={hex.id} className="bg-gray-800 p-4 rounded">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-white font-bold">{t.hexagon} {idx + 1} - {t[RESOURCES[hex.resource].translationKey]} {hex.number > 0 && `(${hex.number})`}</div>
+                    <div className="text-white font-bold">{t.hexagon} {idx + 1} - {getResourceName(hex.resource)} {hex.number > 0 && `(${hex.number})`}</div>
                     <div className="w-8 h-8 rounded" style={{ backgroundColor: RESOURCES[hex.resource].color }} />
                   </div>
                   <div className="text-white text-sm mb-2">{t.position}: X: {Math.round(hex.x)}, Y: {Math.round(hex.y)}</div>
@@ -1612,7 +1619,7 @@ export default function CatanGame() {
                   <div className="text-lg">{RESOURCES[res]?.icon}</div>
                   <div className="flex flex-col">
                     <span className="text-white font-black text-base leading-none">{count}</span>
-                    <span className="text-white/40 text-[8px] uppercase font-bold tracking-tighter">{t[RESOURCES[res]?.translationKey as keyof typeof t].substring(0, 3)}</span>
+                    <span className="text-white/40 text-[8px] uppercase font-bold tracking-tighter">{getResourceName(res).substring(0, 3)}</span>
                   </div>
                 </div>
               ))}
