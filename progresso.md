@@ -72,11 +72,11 @@ Status atual das funcionalidades do jogo e roteiro para versão multiplayer onli
 
 ### 4. Melhorias de UX Online
 - [x] **Chat**: Sistema de mensagens entre os jogadores na sala.
-- [ ] **Indicador de Turno**: Notificações e timers para o jogador da vez.
+- [x] **Indicador de Turno**: Notificações e timers para o jogador da vez.
 - [x] **Reconexão**: Capacidade de voltar ao jogo em caso de queda de internet.
 
 ### 5. Ajustes e Finalização
 - [ ] **Corrigir bug players**: Resolver problemas na atribuição e troca de IDs de jogadores.
 - [ ] **Criar novos tabuleiros**: Implementar layouts alternativos de recursos e números.
 - [x] **Colocar disclaimer**: Adicionar aviso legal sobre a natureza do projeto e uso de recursos.
-- [ ] **Melhorar visualização de recursos**: Visão geral versus visual de recursos individuais.
+- [x] **Melhorar visualização de recursos**: Visão geral versus visual de recursos individuais.
