@@ -1685,21 +1685,43 @@ export default function CatanGame() {
               </button>
             ))}
           </div>
-          <div className="flex flex-col gap-2 w-full lg:w-auto">
-            <div className="flex justify-between items-center px-1">
-              <span className="text-white/50 text-[10px] font-bold uppercase tracking-wider">{t.resources}</span>
-              <span className="bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border border-amber-500/30">{playerVPs[gameState.currentTurn]} VP</span>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap justify-start lg:justify-end no-scrollbar">
-              {Object.entries(gameState.players[gameState.currentTurn]?.resources || {}).map(([res, count]) => (
-                <div key={res} className="flex-shrink-0 bg-black/40 px-3 py-2 rounded-xl border border-white/10 flex items-center gap-2 shadow-lg hover:bg-black/60 transition-colors">
-                  <div className="text-lg">{RESOURCES[res]?.icon}</div>
-                  <div className="flex flex-col">
-                    <span className="text-white font-black text-base leading-none">{count}</span>
-                    <span className="text-white/40 text-[8px] uppercase font-bold tracking-tighter">{getResourceName(res).substring(0, 3)}</span>
+          <div className="flex flex-col gap-4 w-full lg:w-auto">
+            <div className="flex flex-wrap gap-4 justify-start lg:justify-end">
+              {Object.entries(gameState.players).map(([playerIdStr, player]) => {
+                const playerId = Number(playerIdStr);
+                const isCurrentTurn = gameState.currentTurn === playerId;
+                const isMe = myPlayerId === playerId;
+                
+                return (
+                  <div key={playerId} className={`flex flex-col gap-1 transition-all duration-300 ${isCurrentTurn ? 'scale-105' : 'opacity-70 scale-95'}`}>
+                    <div className="flex justify-between items-center px-1">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: player.color }} />
+                        <span className={`text-[9px] font-bold uppercase tracking-wider ${isCurrentTurn ? 'text-white' : 'text-white/40'}`}>
+                          {player.name} {isMe && `(${t.me})`}
+                        </span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest border ${
+                        isCurrentTurn 
+                          ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' 
+                          : 'bg-white/5 text-white/30 border-white/5'
+                      }`}>
+                        {playerVPs[playerId]} VP
+                      </span>
+                    </div>
+                    <div className={`flex gap-1 p-1 rounded-xl transition-colors ${isCurrentTurn ? 'bg-white/10' : 'bg-black/20'}`}>
+                      {Object.entries(player.resources || {}).map(([res, count]) => (
+                        <div key={res} className={`flex flex-col items-center justify-center min-w-[32px] sm:min-w-[40px] py-1 rounded-lg border transition-all ${
+                          count > 0 ? 'bg-black/40 border-white/10' : 'bg-black/10 border-transparent opacity-30'
+                        }`}>
+                          <div className="text-xs sm:text-sm">{RESOURCES[res]?.icon}</div>
+                          <span className={`font-black text-[10px] sm:text-xs leading-none ${count > 0 ? 'text-white' : 'text-white/20'}`}>{count}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1709,7 +1731,11 @@ export default function CatanGame() {
           <div className="relative flex-shrink-0">
             <canvas ref={canvasRef} width={1000} height={700} onClick={handleCanvasClick} onMouseMove={handleCanvasMove} onMouseLeave={() => setHoveredPosition(null)} className={`bg-[#2c7bb6] rounded-2xl cursor-pointer shadow-[0_0_50px_rgba(0,0,0,0.3)] border-4 sm:border-8 border-[#1a4a6e] transition-opacity duration-500 opacity-100 max-w-none`} />
             {isInitialLoading && <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1a4a6e]/80 rounded-2xl z-20 backdrop-blur-sm"><div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div><p className="text-white font-black text-lg sm:text-xl animate-pulse uppercase tracking-widest text-center px-4">{t.loadingBoard}</p><p className="text-white/60 text-[10px] sm:text-sm mt-2 font-bold uppercase tracking-tighter">{t.prepareStrategy}</p></div>}
-            {!isInitialLoading && gameState.gamePhase === 'setup' && <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-950 px-4 py-2 sm:px-8 sm:py-3 rounded-full font-black shadow-2xl animate-bounce pointer-events-none whitespace-nowrap z-10 text-xs sm:text-base">{gameState.setupSubPhase === 'settlement' ? t.chooseInitialSettlement : t.chooseInitialRoad}</div>}
+            {!isInitialLoading && gameState.gamePhase === 'setup' && (myPlayerId === gameState.currentTurn || debugMode) && (
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-950 px-4 py-2 sm:px-8 sm:py-3 rounded-full font-black shadow-2xl animate-bounce pointer-events-none whitespace-nowrap z-10 text-xs sm:text-base">
+                {gameState.setupSubPhase === 'settlement' ? t.chooseInitialSettlement : t.chooseInitialRoad}
+              </div>
+            )}
           </div>
         </div>
       </div>
